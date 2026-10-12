@@ -23,7 +23,7 @@ export type JobRecommendations = {
   notRecommended: JobRecommendation[];
 };
 
-import { callAiJson } from "@/lib/aiClient";
+import { callAiJson, AiNotConfiguredError } from "@/lib/aiClient";
 
 export type ResumeAnalysisResult = {
   profile: CandidateProfile;
@@ -218,14 +218,21 @@ export async function analyzeResumeWithAi(resumeText: string): Promise<ResumeAna
     throw new Error("请先粘贴或上传简历文本，再进行分析。");
   }
 
-  const result = await callAiJson<Omit<ResumeAnalysisResult, "generatedAt" | "source">>({
-    systemPrompt: "你是严谨的中文求职顾问。只基于用户提供的简历文本做判断，不编造不存在的经历。输出必须是合法 JSON。",
-    userPrompt: `请分析下面这份简历，输出 JSON，字段必须严格符合：{\"profile\":{\"summary\":string,\"yearsOfExperience\":string,\"industryExperience\":string[],\"coreSkills\":string[],\"transferableSkills\":string[],\"strengths\":string[],\"weaknesses\":string[],\"targetSeniority\":string},\"recommendations\":{\"primary\":JobRecommendation[],\"expanded\":JobRecommendation[],\"stretch\":JobRecommendation[],\"notRecommended\":JobRecommendation[]}}。JobRecommendation 为 {\"title\":string,\"reason\":string,\"fitScore\":number,\"focus\":string[]}。每类岗位给 1-3 个，fitScore 为 0-100。简历：\n${normalizedText}`,
-  });
+  try {
+    const result = await callAiJson<Omit<ResumeAnalysisResult, "generatedAt" | "source">>({
+      systemPrompt: "你是严谨的中文求职顾问。只基于用户提供的简历文本做判断，不编造不存在的经历。输出必须是合法 JSON。",
+      userPrompt: `请分析下面这份简历，输出 JSON，字段必须严格符合：{\"profile\":{\"summary\":string,\"yearsOfExperience\":string,\"industryExperience\":string[],\"coreSkills\":string[],\"transferableSkills\":string[],\"strengths\":string[],\"weaknesses\":string[],\"targetSeniority\":string},\"recommendations\":{\"primary\":JobRecommendation[],\"expanded\":JobRecommendation[],\"stretch\":JobRecommendation[],\"notRecommended\":JobRecommendation[]}}。JobRecommendation 为 {\"title\":string,\"reason\":string,\"fitScore\":number,\"focus\":string[]}。每类岗位给 1-3 个，fitScore 为 0-100。简历：\n${normalizedText}`,
+    });
 
-  return {
-    ...result,
-    generatedAt: new Date().toISOString(),
-    source: "real-ai",
-  };
+    return {
+      ...result,
+      generatedAt: new Date().toISOString(),
+      source: "real-ai",
+    };
+  } catch (error) {
+    if (error instanceof AiNotConfiguredError) {
+      return analyzeResume(resumeText);
+    }
+    throw error;
+  }
 }

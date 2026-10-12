@@ -1,5 +1,4 @@
-import { cloud } from "@/lib/cloudClient";
-import { recordUsage, UsageLimitError, FREE_DAILY_LIMIT } from "@/lib/usageLimit";
+import { cloud, isCloudConfigured } from "@/lib/cloudClient";
 
 export type AiSource = "real-ai" | "local-fallback";
 
@@ -10,13 +9,27 @@ export class AiJsonError extends Error {
   }
 }
 
+/**
+ * AI 云服务未配置时抛出。调用方捕获后可回退到本地分析，保证开箱即用。
+ */
+export class AiNotConfiguredError extends Error {
+  constructor(message = "AI 服务未配置，已自动切换为本地智能分析。") {
+    super(message);
+    this.name = "AiNotConfiguredError";
+  }
+}
+
 function getErrorMessage(error: unknown) {
   if (error instanceof Error) return error.message;
   return "AI 调用失败，请稍后重试。";
 }
 
 export function normalizeAiError(error: unknown) {
-  const maybeError = error as { error?: { code?: string | null; message?: string }; requestId?: string; retryAfterMs?: number };
+  const maybeError = error as {
+    error?: { code?: string | null; message?: string };
+    requestId?: string;
+    retryAfterMs?: number;
+  };
   const code = maybeError?.error?.code || "";
   const requestId = maybeError?.requestId;
 
@@ -57,16 +70,8 @@ export async function callAiJson<T>({
   userPrompt: string;
   temperature?: number;
 }): Promise<T> {
-  if (typeof window !== "undefined") {
-    try {
-      recordUsage();
-    } catch (e) {
-      if (e instanceof UsageLimitError) {
-        throw new Error(
-          `今日 AI 分析次数已用完（免费版每日 ${FREE_DAILY_LIMIT} 次）。开通会员可解锁更高额度，或明日 0 点自动恢复。`,
-        );
-      }
-    }
+  if (!isCloudConfigured || !cloud) {
+    throw new AiNotConfiguredError();
   }
 
   const models = await cloud.llm.models.list();

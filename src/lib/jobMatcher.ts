@@ -1,4 +1,4 @@
-import { callAiJson } from "@/lib/aiClient";
+import { callAiJson, AiNotConfiguredError } from "@/lib/aiClient";
 
 export type JobMatchResult = {
   jobTitle: string;
@@ -159,13 +159,20 @@ export async function analyzeJobMatchWithAi(resumeText: string, jdText: string):
     throw new Error("请先填写简历和岗位 JD，再进行匹配分析。");
   }
 
-  const result = await callAiJson<Omit<JobMatchResult, "source">>({
-    systemPrompt: "你是严格的招聘匹配分析师。只能基于用户提供的简历和 JD 判断，不编造经历。输出必须是合法 JSON。",
-    userPrompt: `请对简历和 JD 做匹配分析，输出 JSON，字段必须严格符合：{\"jobTitle\":string,\"score\":number,\"recommendation\":\"建议投递\"|\"谨慎投递\"|\"暂不建议投递\",\"matchedPoints\":string[],\"missingPoints\":string[],\"resumeSuggestions\":string[],\"applicationAdvice\":string[]}。score 为 0-100，matchedPoints/ missingPoints/ resumeSuggestions/ applicationAdvice 各 3-6 条，建议要具体可执行。\n简历：\n${resume}\n\n岗位 JD：\n${jd}`,
-  });
+  try {
+    const result = await callAiJson<Omit<JobMatchResult, "source">>({
+      systemPrompt: "你是严格的招聘匹配分析师。只能基于用户提供的简历和 JD 判断，不编造经历。输出必须是合法 JSON。",
+      userPrompt: `请对简历和 JD 做匹配分析，输出 JSON，字段必须严格符合：{\"jobTitle\":string,\"score\":number,\"recommendation\":\"建议投递\"|\"谨慎投递\"|\"暂不建议投递\",\"matchedPoints\":string[],\"missingPoints\":string[],\"resumeSuggestions\":string[],\"applicationAdvice\":string[]}。score 为 0-100，matchedPoints/ missingPoints/ resumeSuggestions/ applicationAdvice 各 3-6 条，建议要具体可执行。\n简历：\n${resume}\n\n岗位 JD：\n${jd}`,
+    });
 
-  return {
-    ...result,
-    source: "real-ai",
-  };
+    return {
+      ...result,
+      source: "real-ai",
+    };
+  } catch (error) {
+    if (error instanceof AiNotConfiguredError) {
+      return analyzeJobMatch(resumeText, jdText);
+    }
+    throw error;
+  }
 }

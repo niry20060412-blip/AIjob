@@ -40,11 +40,10 @@ export default function TermsPage() {
         </Card>
 
         <Card>
-          <h2 className="text-lg font-bold text-slate-950">4. 会员与用量</h2>
+          <h2 className="text-lg font-bold text-slate-950">4. 产品形态与费用</h2>
           <ul className="mt-4 list-disc space-y-2 pl-5 text-sm leading-7 text-slate-600">
-            <li>免费账户每日享有有限的 AI 分析次数，具体以「会员中心」展示为准。</li>
-            <li>会员服务按所选套餐计费，开通后在有效期内享受对应额度与权益。</li>
-            <li>如发生退款、违约或支付争议，按支付机构与适用消费者权益规则处理。</li>
+            <li>本产品为本地优先的求职辅助工具，不要求注册、不提供订阅会员，本地分析功能不收费。</li>
+            <li>若你自行配置第三方 AI 服务 key 以启用真实 AI 分析，相关费用由该服务商按其与你的约定收取，与本工具无关。</li>
           </ul>
         </Card>
 
