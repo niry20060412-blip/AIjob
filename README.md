@@ -1,36 +1,109 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# AI 精准求职投递助手
 
-## Getting Started
+> 一个面向求职者的 AI 辅助决策工具：帮你做「精准投递」，而不是无脑海投。
 
-First, run the development server:
+AI 精准求职投递助手把 **简历诊断 → 岗位匹配 → 投递话术 → 投递管理 → 一周计划** 串成一套完整工作流，让求职从「广撒网」变成「看数据、有策略、可追踪」的理性决策。
+
+---
+
+## 一、项目简介
+
+很多求职者的痛点是：简历写了但不知道竞争力在哪、看了一堆岗位不知道该投哪个、投完石沉大海也没有复盘。
+
+本项目围绕「精准求职」这个核心目标，提供以下功能：
+
+| 模块 | 作用 |
+| --- | --- |
+| 简历诊断 | 粘贴 / 上传简历，生成候选人画像、能力结构、优势、短板和岗位推荐 |
+| 岗位匹配 | 输入简历 + 岗位 JD，分析匹配度、缺失点、简历修改建议与投递策略 |
+| 投递话术 | 一键生成 4 种风格的自然投递话术，支持单条复制 |
+| 投递管理 | 记录每次投递的状态，统计回复率 / 面试率 / Offer，数据本地保存 |
+| 一周计划 | 根据候选人画像和目标岗位，生成 7 天可勾选的行动计划 |
+| 附件识别 | 支持 TXT / MD / PDF / DOCX 简历附件解析并回填 |
+| 浏览器插件 | 在招聘网站一键采集岗位信息，导入 Web 端继续分析 |
+
+设计风格为白底卡片 + 蓝紫主色的轻量 SaaS UI（Notion / 飞书风格），无登录、本地优先，便于快速试用。
+
+---
+
+## 二、技术栈
+
+- **框架**：Next.js 16（App Router）+ React 19
+- **样式**：Tailwind CSS
+- **AI 能力**：WorkBuddy Cloud SDK（真实大模型调用，接入中）
+- **本地数据**：浏览器 `localStorage`，无需后端
+- **附件解析**：`pdfjs-dist`（PDF）、`mammoth`（DOCX）
+- **浏览器插件**：Chrome Extension Manifest V3
+
+---
+
+## 三、本地运行
+
+环境要求：Node.js 18+（推荐 22+）。
 
 ```bash
+# 安装依赖
+npm install
+
+# 启动开发服务器
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+
+# 生产构建并启动
+npm run build
+npm start
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+打开浏览器访问 [http://localhost:3000](http://localhost:3000) 即可使用。
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+---
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## 四、浏览器插件使用
 
-## Learn More
+插件源码位于 `extension/` 目录：
 
-To learn more about Next.js, take a look at the following resources:
+1. 打开 Chrome，进入 `chrome://extensions`
+2. 右上角开启「开发者模式」
+3. 点击「加载已解压的扩展程序」，选择 `extension/` 目录
+4. 在招聘网站岗位详情页点击插件图标，采集岗位信息
+5. 点击「复制 JSON」或「发送到 Web」，回到本助手继续分析
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+---
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## 五、使用规则
 
-## Deploy on Vercel
+使用本产品即表示你同意以下规则：
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+1. **信息真实**：你输入的简历、岗位 JD 等资料必须真实、合法，不得伪造学历、工作经历或冒用他人信息。
+2. **辅助性质**：本产品所有分析、话术、计划均为 **AI 辅助生成**，仅供参考与启发，不构成求职承诺或录用保证。最终投递与沟通由你本人负责。
+3. **自主决策**：匹配度、企业核查等结果基于有限信息得出，可能存在偏差。投递前请自行核实岗位与企业的真实性，谨防招聘诈骗。
+4. **禁止滥用**：不得利用本工具批量生成垃圾投递、骚扰招聘方，或用于任何违反法律法规、平台规则的行为。
+5. **数据隐私**：默认情况下，你的简历与投递记录仅保存在本地浏览器，不会自动上传。接入云端同步后，请在对应设置中了解数据存储范围。
+6. **风险自担**：因使用本产品产生的任何直接或间接后果，由使用者自行承担。
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+---
+
+## 六、免责声明
+
+- 本产品提供的岗位推荐、企业核查、匹配度、话术等内容均由算法 / 模型生成，**不保证准确性、时效性与适用性**。
+- 企业正规性核查仅为辅助风险提示，**不能替代**官方工商登记、司法、征信等权威渠道的核实。
+- 本产品不对使用者因使用本工具而获得的面试、录用、薪资等结果作任何明示或暗示的保证。
+- 如本产品用于商业化交付，运营方应另行提供完整隐私政策、服务条款与合规说明。
+
+---
+
+## 七、项目状态
+
+当前为可交互原型版本：
+
+- ✅ 简历诊断、岗位匹配、话术生成、投递管理、一周计划等核心流程可用
+- ✅ 浏览器插件与附件识别可用
+- 🔧 真实 AI 分析能力接入中（已完成云服务开通与 SDK 集成，正在替换本地 mock 逻辑）
+- 🔧 用户登录、云端数据、会员与用量限制为计划中的商业化能力
+
+---
+
+## 八、仓库地址
+
+https://github.com/niry20060412-blip/AIjob
+
+欢迎基于本项目学习、二次开发与合规使用。
