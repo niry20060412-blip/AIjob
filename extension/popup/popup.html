@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>岗位采集器</title>
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <main class="app">
+      <header>
+        <div class="logo">AI</div>
+        <div>
+          <h1>岗位采集器</h1>
+          <p>只读取当前页面公开岗位信息，不自动投递。</p>
+        </div>
+      </header>
+
+      <section class="notice">
+        <strong>安全边界</strong>
+        <span>不收集账号密码，不自动登录，不自动点击投递，不绕过平台限制。</span>
+      </section>
+
+      <section class="form">
+        <label>岗位名称<input id="jobTitle" /></label>
+        <label>公司名称<input id="companyName" /></label>
+        <label>薪资<input id="salary" /></label>
+        <label>城市<input id="city" /></label>
+        <label>页面标题<input id="pageTitle" /></label>
+        <label>页面 URL<input id="pageUrl" /></label>
+        <label>岗位 JD<textarea id="jdText"></textarea></label>
+      </section>
+
+      <section class="actions">
+        <button id="refreshBtn" class="secondary">重新采集</button>
+        <button id="copyBtn">复制到剪贴板</button>
+        <button id="sendBtn" class="primary">发送到 Web 应用</button>
+      </section>
+
+      <p id="status" class="status">正在读取当前页面...</p>
+      <p class="help">如果识别为空，请先刷新招聘页面，再点“重新采集”。部分网站使用动态渲染，需要等待页面内容完全加载。</p>
+    </main>
+    <script src="popup.js"></script>
+  </body>
+</html>
