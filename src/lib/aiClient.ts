@@ -1,4 +1,5 @@
 import { cloud } from "@/lib/cloudClient";
+import { recordUsage, UsageLimitError, FREE_DAILY_LIMIT } from "@/lib/usageLimit";
 
 export type AiSource = "real-ai" | "local-fallback";
 
@@ -56,6 +57,18 @@ export async function callAiJson<T>({
   userPrompt: string;
   temperature?: number;
 }): Promise<T> {
+  if (typeof window !== "undefined") {
+    try {
+      recordUsage();
+    } catch (e) {
+      if (e instanceof UsageLimitError) {
+        throw new Error(
+          `今日 AI 分析次数已用完（免费版每日 ${FREE_DAILY_LIMIT} 次）。开通会员可解锁更高额度，或明日 0 点自动恢复。`,
+        );
+      }
+    }
+  }
+
   const models = await cloud.llm.models.list();
   const model = models.find((item) => item.disabled !== true);
 

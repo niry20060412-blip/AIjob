@@ -5,6 +5,7 @@ export const navItems = [
   { href: "/pitch-generator", label: "话术生成", icon: "✦" },
   { href: "/applications", label: "投递管理", icon: "▣" },
   { href: "/weekly-plan", label: "一周计划", icon: "□" },
+  { href: "/membership", label: "会员中心", icon: "★" },
 ];
 
 export const metrics = [
