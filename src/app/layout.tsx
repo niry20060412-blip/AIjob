@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "AI 精准求职投递助手",
+  title: "AI 精准求职投递助手 · MK2",
   description: "AI 求职决策、简历诊断、岗位推荐与精准投递辅助系统原型",
 };
 
