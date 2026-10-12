@@ -40,3 +40,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# private seller docs (contain admin token, do NOT push)
+卖家后台说明.md

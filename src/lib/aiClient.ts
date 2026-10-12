@@ -1,4 +1,5 @@
 import { cloud, isCloudConfigured } from "@/lib/cloudClient";
+import { consumeLicense } from "@/lib/licenseClient";
 
 export type AiSource = "real-ai" | "local-fallback";
 
@@ -73,6 +74,9 @@ export async function callAiJson<T>({
   if (!isCloudConfigured || !cloud) {
     throw new AiNotConfiguredError();
   }
+
+  // 授权码扣减：仅云端模式生效，本地开发自动跳过
+  await consumeLicense();
 
   const models = await cloud.llm.models.list();
   const model = models.find((item) => item.disabled !== true);

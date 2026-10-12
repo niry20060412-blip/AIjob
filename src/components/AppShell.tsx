@@ -3,9 +3,11 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { navItems } from "@/lib/mockData";
+import { useLicense } from "@/components/LicenseGate";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const { info, reset } = useLicense();
 
   return (
     <div className="min-h-screen bg-[#f7f8fc] text-slate-900">
@@ -43,7 +45,16 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
         <div className="absolute bottom-6 left-5 right-5">
           <div className="rounded-3xl border border-slate-200 bg-white p-4 text-xs leading-5 text-slate-500">
-            数据保存在本机浏览器，不会上传服务器。开启真实 AI 分析的方法见项目说明文档。
+            <p>AI 由云端提供，用量按激活码限制。</p>
+            {info ? (
+              <p className="mt-1">
+                当前激活码剩余{" "}
+                <span className="font-semibold text-slate-700">{Math.max(0, info.quota - info.used)}</span> / {info.quota} 次
+                <button onClick={reset} className="ml-2 text-indigo-600 hover:underline">
+                  更换
+                </button>
+              </p>
+            ) : null}
           </div>
         </div>
       </aside>
