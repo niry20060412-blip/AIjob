@@ -70,19 +70,27 @@ export default function JobMatchingPage() {
     }
   }
 
-  function handleAnalyze() {
-    saveStoredResume(resumeText, "manual");
-    const analysis = analyzeJobMatch(resumeText, jdText);
-    setResult(analysis);
-    saveJobFlowContext({
-      resumeText,
-      jdText,
-      jobTitle: analysis.jobTitle,
-      companyName: importedJob?.companyName,
-      matchScore: analysis.score,
-      recommendation: analysis.recommendation,
-      source: "job-match",
-    });
+  async function handleAnalyze() {
+    setErrorMessage("");
+    setIsAnalyzing(true);
+    try {
+      saveStoredResume(resumeText, "manual");
+      const analysis = await analyzeJobMatchWithAi(resumeText, jdText);
+      setResult(analysis);
+      saveJobFlowContext({
+        resumeText,
+        jdText,
+        jobTitle: analysis.jobTitle,
+        companyName: importedJob?.companyName,
+        matchScore: analysis.score,
+        recommendation: analysis.recommendation,
+        source: "job-match",
+      });
+    } catch (error) {
+      setErrorMessage(normalizeAiError(error));
+    } finally {
+      setIsAnalyzing(false);
+    }
   }
 
   function applyImportedPayload(payload: ReturnType<typeof parsePluginJobJson>) {
@@ -128,8 +136,8 @@ export default function JobMatchingPage() {
       <PageHeader
         eyebrow="Job JD Matching"
         title="岗位 JD 匹配度分析"
-        description="输入简历文本和岗位 JD，通过本地 mock 规则函数分析关键词匹配度、缺失点、简历修改建议和投递策略。"
-        action="本地规则匹配"
+        description="输入简历文本和岗位 JD，调用真实 AI 分析关键词匹配度、缺失点、简历修改建议和投递策略。"
+        action="真实 AI 匹配"
       />
 
       <Card className="mb-6">
@@ -227,21 +235,24 @@ export default function JobMatchingPage() {
         <div className="flex flex-col gap-3 sm:flex-row">
           <button
             onClick={handleAnalyze}
-            className="rounded-2xl bg-gradient-to-r from-indigo-600 to-violet-600 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-indigo-100 transition hover:-translate-y-0.5"
+            disabled={isAnalyzing}
+            className="rounded-2xl bg-gradient-to-r from-indigo-600 to-violet-600 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-indigo-100 transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60"
           >
-            开始匹配分析
+            {isAnalyzing ? "AI 匹配分析中..." : "开始匹配分析"}
           </button>
           <button
             onClick={() => {
               updateResumeText("");
               setJdText("");
               setResult(null);
+              setErrorMessage("");
             }}
             className="rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-500 transition hover:bg-slate-50"
           >
             清空
           </button>
         </div>
+        {errorMessage ? <p className="mt-3 rounded-2xl bg-rose-50 px-4 py-3 text-sm leading-6 text-rose-600">{errorMessage}</p> : null}
       </Card>
 
       {result ? (
@@ -257,7 +268,7 @@ export default function JobMatchingPage() {
             <div className="mt-6 rounded-[2rem] bg-gradient-to-br from-indigo-600 to-violet-600 p-8 text-white">
               <p className="text-sm text-indigo-100">匹配度评分</p>
               <div className="mt-4 text-6xl font-bold">{result.score}</div>
-              <p className="mt-3 text-sm leading-6 text-indigo-100">{result.recommendation}。当前结果来自本地 mock 关键词规则，后续可替换为真实大模型分析。</p>
+              <p className="mt-3 text-sm leading-6 text-indigo-100">{result.recommendation}。当前结果来自真实 AI 分析，请结合岗位实际情况复核后再投递。</p>
             </div>
             <div className="mt-6">
               <div className="mb-2 flex justify-between text-sm text-slate-500">

@@ -4,7 +4,8 @@ import { useMemo, useState } from "react";
 import { AppShell } from "@/components/AppShell";
 import { Badge, Card, PageHeader } from "@/components/Ui";
 import { loadJobFlowContext, type JobFlowContext } from "@/lib/flowContext";
-import { generateApplicationMessages, type ApplicationMessage, type ApplicationMessagesResult } from "@/lib/messageGenerator";
+import { generateApplicationMessagesWithAi, type ApplicationMessage, type ApplicationMessagesResult } from "@/lib/messageGenerator";
+import { normalizeAiError } from "@/lib/aiClient";
 import { clearStoredResume, loadStoredResume, saveStoredResume } from "@/lib/resumeStore";
 
 const sampleJd = `岗位名称：AI 产品经理
@@ -48,6 +49,8 @@ export default function PitchGeneratorPage() {
   const [resumeText, setResumeText] = useState(() => flowContext?.resumeText || loadStoredResume()?.text || "");
   const [jdText, setJdText] = useState(() => flowContext?.jdText || sampleJd);
   const [result, setResult] = useState<ApplicationMessagesResult | null>(null);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
   const resumeCount = useMemo(() => resumeText.trim().length, [resumeText]);
   const jdCount = useMemo(() => jdText.trim().length, [jdText]);
 
@@ -61,9 +64,17 @@ export default function PitchGeneratorPage() {
     }
   }
 
-  function handleGenerate() {
-    saveStoredResume(resumeText, flowContext?.resumeText ? "flow" : "manual");
-    setResult(generateApplicationMessages(resumeText, jdText));
+  async function handleGenerate() {
+    setErrorMessage("");
+    setIsGenerating(true);
+    try {
+      saveStoredResume(resumeText, flowContext?.resumeText ? "flow" : "manual");
+      setResult(await generateApplicationMessagesWithAi(resumeText, jdText));
+    } catch (error) {
+      setErrorMessage(normalizeAiError(error));
+    } finally {
+      setIsGenerating(false);
+    }
   }
 
   return (
@@ -71,8 +82,8 @@ export default function PitchGeneratorPage() {
       <PageHeader
         eyebrow="Pitch Generator"
         title="投递话术生成"
-        description="输入简历文本和岗位 JD，本地 mock 函数会生成 4 种不同风格的自然投递话术，不接真实 AI API。"
-        action="本地话术生成"
+        description="输入简历文本和岗位 JD，真实 AI 会生成 4 种不同风格的自然投递话术，可直接复制使用。"
+        action="真实 AI 话术生成"
       />
 
       {flowContext ? (
@@ -85,8 +96,8 @@ export default function PitchGeneratorPage() {
                 匹配度 {flowContext.matchScore ?? "--"}% · {flowContext.recommendation || "等待投递判断"}。可直接生成话术并复制投递。
               </p>
             </div>
-            <button onClick={handleGenerate} className="rounded-2xl bg-gradient-to-r from-indigo-600 to-violet-600 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-indigo-100 transition hover:-translate-y-0.5">
-              直接生成话术
+            <button onClick={handleGenerate} disabled={isGenerating} className="rounded-2xl bg-gradient-to-r from-indigo-600 to-violet-600 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-indigo-100 transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60">
+              {isGenerating ? "AI 生成中..." : "直接生成话术"}
             </button>
           </div>
         </Card>
@@ -130,21 +141,24 @@ export default function PitchGeneratorPage() {
         <div className="flex flex-col gap-3 sm:flex-row">
           <button
             onClick={handleGenerate}
-            className="rounded-2xl bg-gradient-to-r from-indigo-600 to-violet-600 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-indigo-100 transition hover:-translate-y-0.5"
+            disabled={isGenerating}
+            className="rounded-2xl bg-gradient-to-r from-indigo-600 to-violet-600 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-indigo-100 transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60"
           >
-            生成投递话术
+            {isGenerating ? "AI 生成中..." : "生成投递话术"}
           </button>
           <button
             onClick={() => {
               updateResumeText("");
               setJdText("");
               setResult(null);
+              setErrorMessage("");
             }}
             className="rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-500 transition hover:bg-slate-50"
           >
             清空
           </button>
         </div>
+        {errorMessage ? <p className="mt-3 rounded-2xl bg-rose-50 px-4 py-3 text-sm leading-6 text-rose-600">{errorMessage}</p> : null}
       </Card>
 
       {result ? (
@@ -162,8 +176,8 @@ export default function PitchGeneratorPage() {
             </div>
           </div>
           <div className="grid gap-5 xl:grid-cols-2">
-            {result.messages.map((message) => (
-              <MessageCard key={message.style} message={message} />
+            {result.messages.map((message, index) => (
+              <MessageCard key={`${message.style}-${index}`} message={message} />
             ))}
           </div>
         </Card>

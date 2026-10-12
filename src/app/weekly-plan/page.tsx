@@ -3,7 +3,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { AppShell } from "@/components/AppShell";
 import { Badge, Card, PageHeader, ProgressBar } from "@/components/Ui";
-import { generateWeeklyPlan, type WeeklyPlanResult } from "@/lib/weeklyPlanner";
+import { generateWeeklyPlanWithAi, type WeeklyPlanResult } from "@/lib/weeklyPlanner";
+import { normalizeAiError } from "@/lib/aiClient";
 import { loadStoredResume } from "@/lib/resumeStore";
 
 const targetJobOptions = ["AI 产品经理", "增长产品经理", "B 端产品经理", "产品运营", "用户体验策略"];
@@ -24,6 +25,8 @@ export default function WeeklyPlanPage() {
   const [plan, setPlan] = useState<WeeklyPlanResult | null>(null);
   const [completedTasks, setCompletedTasks] = useState<Record<string, boolean>>({});
   const [hasSyncedResume, setHasSyncedResume] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
 
   useEffect(() => {
     const storedResume = loadStoredResume();
@@ -55,11 +58,19 @@ export default function WeeklyPlanPage() {
     });
   }
 
-  function handleGenerate() {
-    const targetJobs = selectedJobs.length ? selectedJobs : ["AI 产品经理"];
-    const nextPlan = generateWeeklyPlan(profile, targetJobs);
-    setPlan(nextPlan);
-    setCompletedTasks({});
+  async function handleGenerate() {
+    setErrorMessage("");
+    setIsGenerating(true);
+    try {
+      const targetJobs = selectedJobs.length ? selectedJobs : ["AI 产品经理"];
+      const nextPlan = await generateWeeklyPlanWithAi(profile, targetJobs);
+      setPlan(nextPlan);
+      setCompletedTasks({});
+    } catch (error) {
+      setErrorMessage(normalizeAiError(error));
+    } finally {
+      setIsGenerating(false);
+    }
   }
 
   function toggleTask(id: string) {
@@ -72,7 +83,7 @@ export default function WeeklyPlanPage() {
         eyebrow="Weekly Plan"
         title="一周投递计划"
         description="根据目标岗位方向生成 7 天行动计划，把岗位筛选、简历优化、精准投递和跟进复盘拆成每天可完成的任务。"
-        action="本地计划生成"
+        action="真实 AI 计划生成"
       />
 
       <div className="grid gap-6 lg:grid-cols-[0.88fr_1.12fr]">
@@ -114,10 +125,12 @@ export default function WeeklyPlanPage() {
 
           <button
             onClick={handleGenerate}
-            className="mt-6 w-full rounded-2xl bg-gradient-to-r from-indigo-600 to-violet-600 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-indigo-100 transition hover:-translate-y-0.5"
+            disabled={isGenerating}
+            className="mt-6 w-full rounded-2xl bg-gradient-to-r from-indigo-600 to-violet-600 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-indigo-100 transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60"
           >
-            生成 7 天计划
+            {isGenerating ? "AI 计划生成中..." : "生成 7 天计划"}
           </button>
+          {errorMessage ? <p className="mt-3 rounded-2xl bg-rose-50 px-4 py-3 text-sm leading-6 text-rose-600">{errorMessage}</p> : null}
         </Card>
 
         <Card>

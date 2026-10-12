@@ -53,7 +53,7 @@ npm run build
 npm start
 ```
 
-打开浏览器访问 [http://localhost:3000](http://localhost:3000) 即可使用。
+打开浏览器访问 `http://localhost:3000` 即可使用（注意：这是你本机启动服务后的地址，在 GitHub 网页上点击是打不开的）。
 
 ---
 
