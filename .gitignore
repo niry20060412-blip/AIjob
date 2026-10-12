@@ -41,5 +41,9 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
+# local build/run artifacts
+build.log
+start.log
+
 # private seller docs (contain admin token, do NOT push)
 卖家后台说明.md
