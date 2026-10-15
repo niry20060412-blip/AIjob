@@ -83,7 +83,13 @@
 
 基于当前简历与目标岗位，AI 生成未来一周的求职行动计划，按天拆解任务。
 
+**生成设置（简历自动同步 + 选方向）：**
+
 ![一周计划](assets/showcase/10-weekly-plan.png)
+
+**生成结果（7 天行动计划，按天拆解任务）：**
+
+![一周计划-生成结果](assets/showcase/10b-weekly-plan-result.png)
 
 ---
 
