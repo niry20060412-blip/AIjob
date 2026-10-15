@@ -1,16 +1,12 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { AppShell } from "@/components/AppShell";
 import { Badge, Card, PageHeader } from "@/components/Ui";
 import { loadJobFlowContext, type JobFlowContext } from "@/lib/flowContext";
 import { generateApplicationMessagesWithAi, type ApplicationMessage, type ApplicationMessagesResult } from "@/lib/messageGenerator";
 import { normalizeAiError } from "@/lib/aiClient";
 import { clearStoredResume, loadStoredResume, saveStoredResume } from "@/lib/resumeStore";
-
-const sampleJd = `岗位名称：AI 产品经理
-我们正在寻找一位熟悉 AI 应用和 B 端 SaaS 场景的产品经理，负责从用户需求、产品方案、原型设计到研发上线的完整流程。
-岗位要求：熟悉大模型、AIGC 或智能体应用；具备产品规划、需求分析、PRD、原型设计和项目推进能力；有数据分析意识，能通过指标、转化率和留存数据评估效果；有 B 端工具、企业协作或 SaaS 产品经验优先。`;
 
 function MessageCard({ message }: { message: ApplicationMessage }) {
   const [copied, setCopied] = useState(false);
@@ -47,10 +43,19 @@ function MessageCard({ message }: { message: ApplicationMessage }) {
 export default function PitchGeneratorPage() {
   const [flowContext] = useState<JobFlowContext | null>(() => loadJobFlowContext());
   const [resumeText, setResumeText] = useState(() => flowContext?.resumeText || loadStoredResume()?.text || "");
-  const [jdText, setJdText] = useState(() => flowContext?.jdText || sampleJd);
+  const [jdText, setJdText] = useState(() => flowContext?.jdText || "");
   const [result, setResult] = useState<ApplicationMessagesResult | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
+  const [elapsed, setElapsed] = useState(0);
+
+  // AI 生成进行中每秒累计等待时间，避免用户干等无反馈
+  useEffect(() => {
+    if (!isGenerating) return;
+    setElapsed(0);
+    const timer = window.setInterval(() => setElapsed((value) => value + 1), 1000);
+    return () => window.clearInterval(timer);
+  }, [isGenerating]);
   const resumeCount = useMemo(() => resumeText.trim().length, [resumeText]);
   const jdCount = useMemo(() => jdText.trim().length, [jdText]);
 
@@ -96,8 +101,8 @@ export default function PitchGeneratorPage() {
                 匹配度 {flowContext.matchScore ?? "--"}% · {flowContext.recommendation || "等待投递判断"}。可直接生成话术并复制投递。
               </p>
             </div>
-            <button onClick={handleGenerate} disabled={isGenerating} className="rounded-2xl bg-gradient-to-r from-indigo-600 to-violet-600 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-indigo-100 transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60">
-              {isGenerating ? "AI 生成中..." : "直接生成话术"}
+            <button onClick={handleGenerate} disabled={isGenerating} data-tour="pitch-generate" className="rounded-2xl bg-gradient-to-r from-indigo-600 to-violet-600 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-indigo-100 transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60">
+              {isGenerating ? `AI 生成中… ${elapsed}s` : "直接生成话术"}
             </button>
           </div>
         </Card>
@@ -142,9 +147,10 @@ export default function PitchGeneratorPage() {
           <button
             onClick={handleGenerate}
             disabled={isGenerating}
+            data-tour="pitch-generate"
             className="rounded-2xl bg-gradient-to-r from-indigo-600 to-violet-600 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-indigo-100 transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60"
           >
-            {isGenerating ? "AI 生成中..." : "生成投递话术"}
+            {isGenerating ? `AI 生成中… ${elapsed}s` : "生成投递话术"}
           </button>
           <button
             onClick={() => {
@@ -158,11 +164,13 @@ export default function PitchGeneratorPage() {
             清空
           </button>
         </div>
+        {isGenerating ? <p className="mt-3 rounded-2xl bg-indigo-50 px-4 py-3 text-sm leading-6 text-indigo-600">AI 正在生成 4 种风格的投递话术，通常 20~60 秒完成，请稍候。</p> : null}
         {errorMessage ? <p className="mt-3 rounded-2xl bg-rose-50 px-4 py-3 text-sm leading-6 text-rose-600">{errorMessage}</p> : null}
       </Card>
 
       {result ? (
-        <Card className="mt-6">
+        <div data-tour="pitch-result" className="mt-6">
+          <Card>
           <div className="mb-6 flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
             <div>
               <p className="text-sm font-semibold text-indigo-600">目标岗位：{result.jobTitle}</p>
@@ -180,7 +188,8 @@ export default function PitchGeneratorPage() {
               <MessageCard key={`${message.style}-${index}`} message={message} />
             ))}
           </div>
-        </Card>
+          </Card>
+        </div>
       ) : (
         <Card className="mt-6">
           <div className="flex min-h-48 flex-col items-center justify-center rounded-[2rem] border border-dashed border-slate-200 bg-slate-50 text-center">

@@ -7,8 +7,9 @@ const isStaticExport = process.env.STATIC_EXPORT === "1";
 const nextConfig: NextConfig = {
   /* config options here */
   ...(isStaticExport ? { output: "export" as const, trailingSlash: true } : {}),
-  // 静态导出不支持 PPR/Cache Components，导出模式下关闭
-  ...(isStaticExport ? {} : { cacheComponents: true, partialPrefetching: true }),
+  // 静态导出（STATIC_EXPORT=1）时关闭 cacheComponents / partialPrefetching，否则 export 模式报 PPR 冲突
+  cacheComponents: !isStaticExport,
+  partialPrefetching: !isStaticExport,
   turbopack: {
     root: process.cwd(),
     rules: {

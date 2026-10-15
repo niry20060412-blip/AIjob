@@ -158,6 +158,7 @@ export async function generateWeeklyPlanWithAi(profile: string, targetJobs: stri
 
   try {
     const result = await callAiJson<Omit<WeeklyPlanResult, "source">>({
+      action: "weekly",
       systemPrompt: "你是务实的中文求职规划顾问。只基于用户提供的候选人画像和目标岗位制定计划，不编造经历。输出必须是合法 JSON。",
       userPrompt: `请生成 7 天精准求职计划，输出 JSON，字段必须严格符合：{\"profile\":string,\"targetJobs\":string[],\"totalSuggestedApplications\":number,\"days\":WeeklyPlanDay[]}。WeeklyPlanDay 为 {\"id\":string,\"day\":string,\"theme\":string,\"dailyGoal\":string,\"tasks\":string[],\"suggestedApplications\":number,\"resumeOptimization\":string,\"followUpAction\":string}。days 必须正好 7 天，id 使用 day-1 到 day-7，每天 tasks 3-5 条，建议强调精准投递而不是海投。\n候选人画像/简历：\n${profileText}\n\n目标岗位：${selectedJobs.join("、")}`,
     });

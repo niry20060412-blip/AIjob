@@ -220,8 +220,9 @@ export async function analyzeResumeWithAi(resumeText: string): Promise<ResumeAna
 
   try {
     const result = await callAiJson<Omit<ResumeAnalysisResult, "generatedAt" | "source">>({
+      action: "resume",
       systemPrompt: "你是严谨的中文求职顾问。只基于用户提供的简历文本做判断，不编造不存在的经历。输出必须是合法 JSON。",
-      userPrompt: `请分析下面这份简历，输出 JSON，字段必须严格符合：{\"profile\":{\"summary\":string,\"yearsOfExperience\":string,\"industryExperience\":string[],\"coreSkills\":string[],\"transferableSkills\":string[],\"strengths\":string[],\"weaknesses\":string[],\"targetSeniority\":string},\"recommendations\":{\"primary\":JobRecommendation[],\"expanded\":JobRecommendation[],\"stretch\":JobRecommendation[],\"notRecommended\":JobRecommendation[]}}。JobRecommendation 为 {\"title\":string,\"reason\":string,\"fitScore\":number,\"focus\":string[]}。每类岗位给 1-3 个，fitScore 为 0-100。简历：\n${normalizedText}`,
+      userPrompt: `请分析下面这份简历，输出 JSON，字段必须严格符合：{\"profile\":{\"summary\":string,\"yearsOfExperience\":string,\"industryExperience\":string[],\"coreSkills\":string[],\"transferableSkills\":string[],\"strengths\":string[],\"weaknesses\":string[],\"targetSeniority\":string},\"recommendations\":{\"primary\":JobRecommendation[],\"expanded\":JobRecommendation[],\"stretch\":JobRecommendation[],\"notRecommended\":JobRecommendation[]}}。JobRecommendation 为 {\"title\":string,\"reason\":string,\"fitScore\":number,\"focus\":string[]}。为加快出结果：primary 给 2 个，expanded、stretch、notRecommended 各只给 1 个；summary 和 reason 各控制在一句话（40 字以内）；每个数组的元素不超过 5 个；focus 只给 2 项。fitScore 为 0-100。简历：\n${normalizedText}`,
     });
 
     return {

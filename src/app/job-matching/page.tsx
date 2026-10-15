@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { AppShell } from "@/components/AppShell";
 import { FileTextUploader } from "@/components/FileTextUploader";
 import { Badge, Card, PageHeader, ProgressBar } from "@/components/Ui";
@@ -10,15 +10,6 @@ import { parsePluginJobJson, parseRawJobText, saveImportedJob, type ImportedJob 
 import { normalizeAiError } from "@/lib/aiClient";
 import { analyzeJobMatchWithAi, type JobMatchResult } from "@/lib/jobMatcher";
 import { clearStoredResume, loadStoredResume, saveStoredResume } from "@/lib/resumeStore";
-
-const sampleJd = `岗位名称：AI 产品经理
-我们正在寻找一位熟悉 AI 应用和 B 端 SaaS 场景的产品经理，负责从用户需求、产品方案、原型设计到研发上线的完整流程。
-岗位要求：
-1. 熟悉大模型、AIGC、智能体或 RAG 等 AI 应用场景；
-2. 具备产品规划、需求分析、PRD、原型设计和项目推进能力；
-3. 有数据分析意识，能通过指标、转化率和留存数据评估效果；
-4. 有 B 端工具、企业协作或 SaaS 产品经验优先；
-5. 能与研发、设计、运营和客户成功团队高效协作。`;
 
 function ResultList({ title, items, tone = "indigo" }: { title: string; items: string[]; tone?: "indigo" | "green" | "amber" | "slate" }) {
   const dotClass = {
@@ -50,13 +41,22 @@ function RecommendationBadge({ recommendation }: { recommendation: JobMatchResul
 
 export default function JobMatchingPage() {
   const [resumeText, setResumeText] = useState(() => loadStoredResume()?.text || "");
-  const [jdText, setJdText] = useState(sampleJd);
+  const [jdText, setJdText] = useState("");
   const [result, setResult] = useState<JobMatchResult | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [importJson, setImportJson] = useState("");
   const [importedJob, setImportedJob] = useState<ImportedJob | null>(null);
   const [importMessage, setImportMessage] = useState("可粘贴浏览器插件复制的岗位 JSON。");
+  const [elapsed, setElapsed] = useState(0);
+
+  // AI 分析进行中每秒累计等待时间，避免用户干等无反馈
+  useEffect(() => {
+    if (!isAnalyzing) return;
+    setElapsed(0);
+    const timer = window.setInterval(() => setElapsed((value) => value + 1), 1000);
+    return () => window.clearInterval(timer);
+  }, [isAnalyzing]);
   const resumeCount = useMemo(() => resumeText.trim().length, [resumeText]);
   const jdCount = useMemo(() => jdText.trim().length, [jdText]);
 
@@ -153,12 +153,13 @@ export default function JobMatchingPage() {
             <textarea
               value={importJson}
               onChange={(event) => setImportJson(event.target.value)}
+              data-tour="jd-import-json"
               className="mt-4 min-h-40 w-full resize-none rounded-3xl border border-slate-200 bg-slate-50 p-5 text-sm leading-7 text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-indigo-300 focus:bg-white focus:ring-4 focus:ring-indigo-100"
               placeholder='请粘贴插件复制的 JSON，例如：{"jobTitle":"AI 产品经理","companyName":"某公司","jdText":"..."}'
             />
             <div className="mt-4 flex flex-col gap-3 sm:flex-row">
               <button onClick={handlePasteFromClipboard} className="rounded-2xl border border-indigo-200 bg-indigo-50 px-5 py-3 text-sm font-semibold text-indigo-700 transition hover:bg-indigo-100">从剪贴板导入</button>
-              <button onClick={handleImportJob} className="rounded-2xl bg-gradient-to-r from-indigo-600 to-violet-600 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-indigo-100 transition hover:-translate-y-0.5">导入并填充 JD</button>
+              <button onClick={handleImportJob} data-tour="jd-import-fill" className="rounded-2xl bg-gradient-to-r from-indigo-600 to-violet-600 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-indigo-100 transition hover:-translate-y-0.5">导入并填充 JD</button>
               <button onClick={() => setImportJson("")} className="rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-500 transition hover:bg-slate-50">清空导入框</button>
             </div>
             <p className={`mt-3 text-sm leading-6 ${importMessage.includes("失败") || importMessage.includes("不正确") || importMessage.includes("过短") ? "text-rose-600" : "text-slate-500"}`}>{importMessage}</p>
@@ -180,7 +181,7 @@ export default function JobMatchingPage() {
         </div>
       </Card>
 
-      <div className="grid gap-6 xl:grid-cols-2">
+      <div className="grid gap-6 xl:grid-cols-2" data-tour="jd-source">
         <div className="space-y-6">
           <FileTextUploader
             label="上传简历附件"
@@ -236,9 +237,10 @@ export default function JobMatchingPage() {
           <button
             onClick={handleAnalyze}
             disabled={isAnalyzing}
+            data-tour="jd-start-analyze"
             className="rounded-2xl bg-gradient-to-r from-indigo-600 to-violet-600 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-indigo-100 transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60"
           >
-            {isAnalyzing ? "AI 匹配分析中..." : "开始匹配分析"}
+            {isAnalyzing ? `AI 匹配分析中… ${elapsed}s` : "开始匹配分析"}
           </button>
           <button
             onClick={() => {
@@ -252,11 +254,12 @@ export default function JobMatchingPage() {
             清空
           </button>
         </div>
+        {isAnalyzing ? <p className="mt-3 rounded-2xl bg-indigo-50 px-4 py-3 text-sm leading-6 text-indigo-600">AI 正在分析简历和 JD 的匹配度，通常 20~60 秒完成，请稍候，切走页面结果也不会丢。</p> : null}
         {errorMessage ? <p className="mt-3 rounded-2xl bg-rose-50 px-4 py-3 text-sm leading-6 text-rose-600">{errorMessage}</p> : null}
       </Card>
 
       {result ? (
-        <div className="mt-6 grid gap-6 lg:grid-cols-[0.78fr_1.22fr]">
+        <div className="mt-6 grid gap-6 lg:grid-cols-[0.78fr_1.22fr]" data-tour="jd-result">
           <Card>
             <div className="flex items-start justify-between gap-4">
               <div>
@@ -278,7 +281,7 @@ export default function JobMatchingPage() {
               <ProgressBar value={result.score} />
             </div>
             <div className="mt-6 grid gap-3">
-              <Link href="/pitch-generator" className="rounded-2xl bg-gradient-to-r from-indigo-600 to-violet-600 px-5 py-3 text-center text-sm font-semibold text-white shadow-lg shadow-indigo-100 transition hover:-translate-y-0.5">
+              <Link href="/pitch-generator" data-tour="jd-to-pitch" className="rounded-2xl bg-gradient-to-r from-indigo-600 to-violet-600 px-5 py-3 text-center text-sm font-semibold text-white shadow-lg shadow-indigo-100 transition hover:-translate-y-0.5">
                 用该 JD 生成投递话术
               </Link>
               <Link href="/applications" className="rounded-2xl border border-slate-200 bg-white px-5 py-3 text-center text-sm font-semibold text-slate-700 transition hover:bg-slate-50">

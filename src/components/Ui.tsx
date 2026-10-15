@@ -1,18 +1,18 @@
 export function PageHeader({ eyebrow, title, description, action }: { eyebrow: string; title: string; description: string; action?: string }) {
   return (
-    <div className="mb-8 flex flex-col gap-5 rounded-[2rem] border border-slate-200 bg-white p-7 shadow-sm lg:flex-row lg:items-end lg:justify-between">
+    <div className="mb-5 flex flex-col gap-4 rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm sm:mb-8 sm:gap-5 sm:p-7 lg:flex-row lg:items-end lg:justify-between">
       <div>
-        <p className="mb-3 text-sm font-semibold text-indigo-600">{eyebrow}</p>
-        <h1 className="text-3xl font-bold tracking-tight text-slate-950 md:text-4xl">{title}</h1>
-        <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-500 md:text-base">{description}</p>
+        <p className="mb-1.5 text-xs font-semibold text-indigo-600 sm:mb-3 sm:text-sm">{eyebrow}</p>
+        <h1 className="text-2xl font-bold tracking-tight text-slate-950 sm:text-3xl md:text-4xl">{title}</h1>
+        <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-500 sm:mt-3 md:text-base">{description}</p>
       </div>
-      {action ? <button className="rounded-2xl bg-gradient-to-r from-indigo-600 to-violet-600 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-indigo-100">{action}</button> : null}
+      {action ? <button className="rounded-2xl bg-gradient-to-r from-indigo-600 to-violet-600 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-indigo-100 sm:py-3">{action}</button> : null}
     </div>
   );
 }
 
-export function Card({ children, className = "" }: { children: React.ReactNode; className?: string }) {
-  return <section className={`rounded-[1.75rem] border border-slate-200 bg-white p-6 shadow-sm ${className}`}>{children}</section>;
+export function Card({ children, className = "", ...rest }: { children: React.ReactNode; className?: string } & React.HTMLAttributes<HTMLElement>) {
+  return <section className={`rounded-[1.75rem] border border-slate-200 bg-white p-4 shadow-sm sm:p-6 ${className}`} {...rest}>{children}</section>;
 }
 
 export function Badge({ children, tone = "indigo" }: { children: React.ReactNode; tone?: "indigo" | "slate" | "green" | "amber" | "rose" }) {

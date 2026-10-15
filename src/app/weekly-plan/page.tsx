@@ -126,6 +126,7 @@ export default function WeeklyPlanPage() {
           <button
             onClick={handleGenerate}
             disabled={isGenerating}
+            data-tour="weekly-generate"
             className="mt-6 w-full rounded-2xl bg-gradient-to-r from-indigo-600 to-violet-600 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-indigo-100 transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60"
           >
             {isGenerating ? "AI 计划生成中..." : "生成 7 天计划"}
@@ -174,7 +175,7 @@ export default function WeeklyPlanPage() {
       </div>
 
       {plan ? (
-        <Card className="mt-6">
+        <Card data-tour="weekly-plan-result" className="mt-6">
           <div className="mb-6 flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
             <div>
               <h2 className="text-xl font-bold text-slate-950">7 天行动计划</h2>

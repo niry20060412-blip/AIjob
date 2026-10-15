@@ -16,16 +16,10 @@ export const isCloudConfigured = Boolean(publishableKey);
 
 type CloudClient = ReturnType<typeof createWorkBuddyCloud>;
 
-export const cloud: CloudClient | null = (() => {
-  if (!isCloudConfigured) return null;
-  try {
-    return createWorkBuddyCloud({
+export const cloud: CloudClient | null = isCloudConfigured
+  ? createWorkBuddyCloud({
       ...(endpoint ? { endpoint } : {}),
       publishableKey: publishableKey as string,
       ...(oauthRelayBaseUrl ? { oauthRelayBaseUrl } : {}),
-    });
-  } catch {
-    // 构建期（Node 预渲染）无 location.origin 时会进入这里，运行时（浏览器）会正常创建
-    return null;
-  }
-})();
+    })
+  : null;

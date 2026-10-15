@@ -47,3 +47,8 @@ start.log
 
 # private seller docs (contain admin token, do NOT push)
 卖家后台说明.md
+
+# cloudflare deploy worker artifacts
+cf-worker/node_modules
+cf-worker/out
+cf-worker/*.log

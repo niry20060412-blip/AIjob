@@ -109,6 +109,7 @@ export async function generateApplicationMessagesWithAi(resumeText: string, jdTe
 
   try {
     const result = await callAiJson<Omit<ApplicationMessagesResult, "source">>({
+      action: "pitch",
       systemPrompt: "你是专业但克制的中文求职沟通顾问。只基于用户提供的简历和 JD 生成话术，不夸大、不编造。输出必须是合法 JSON。",
       userPrompt: `请根据简历和 JD 生成投递话术，输出 JSON，字段必须严格符合：{\"jobTitle\":string,\"highlights\":string[],\"messages\":ApplicationMessage[]}。ApplicationMessage 为 {\"style\":\"专业简洁型\"|\"真诚求职型\"|\"应届生/转行解释型\"|\"高匹配强调型\",\"description\":string,\"content\":string}。必须生成 4 条 messages，每条 80-160 字，适合真实求职沟通，不能承诺不存在的经历。\n简历：\n${resume}\n\n岗位 JD：\n${jd}`,
       temperature: 0.7,

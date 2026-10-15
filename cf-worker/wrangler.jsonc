@@ -1,0 +1,10 @@
+{
+  "name": "ai-job-assistant",
+  "main": "worker.js",
+  "account_id": "582f0db06f57b55f9e0630f911fbb5e5",
+  "compatibility_date": "2026-09-01",
+  "assets": {
+    "directory": "./out",
+    "binding": "ASSETS"
+  }
+}

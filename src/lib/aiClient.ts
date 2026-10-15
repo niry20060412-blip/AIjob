@@ -62,33 +62,45 @@ function stripJsonFence(text: string) {
     .trim();
 }
 
+// 模型列表基本不变，缓存后省掉每次分析前的一次网络往返
+let cachedModelId: string | null = null;
+
 export async function callAiJson<T>({
   systemPrompt,
   userPrompt,
   temperature = 0.4,
+  action,
 }: {
   systemPrompt: string;
   userPrompt: string;
   temperature?: number;
+  /** 用量记录用的功能标识：resume / matching / pitch / weekly */
+  action?: string;
 }): Promise<T> {
   if (!isCloudConfigured || !cloud) {
     throw new AiNotConfiguredError();
   }
 
-  // 授权码扣减：仅云端模式生效，本地开发自动跳过
-  await consumeLicense();
+  // 扣激活码次数与拉取模型列表并行执行，减少等待
+  let modelId = cachedModelId;
+  if (modelId) {
+    await consumeLicense(action);
+  } else {
+    const [models] = await Promise.all([cloud.llm.models.list(), consumeLicense(action)]);
+    const model = models.find((item) => item.disabled !== true);
 
-  const models = await cloud.llm.models.list();
-  const model = models.find((item) => item.disabled !== true);
+    if (!model) {
+      throw new Error("当前没有可用 AI 模型，请稍后再试。 ");
+    }
 
-  if (!model) {
-    throw new Error("当前没有可用 AI 模型，请稍后再试。 ");
+    modelId = model.id;
+    cachedModelId = modelId;
   }
 
   let answer = "";
 
   for await (const chunk of cloud.llm.chat.completions.create({
-    model: model.id,
+    model: modelId,
     messages: [
       { role: "system", content: systemPrompt },
       { role: "user", content: userPrompt },

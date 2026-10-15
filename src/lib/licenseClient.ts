@@ -88,7 +88,7 @@ export async function validateLicense(
   return (data as { ok: boolean; reason?: string; used?: number; quota?: number }) || { ok: false, reason: "invalid" };
 }
 
-export async function consumeLicense(): Promise<LicenseInfo> {
+export async function consumeLicense(action?: string): Promise<LicenseInfo> {
   // 本地开发（未配置云端）不限制用量
   if (!isCloudConfigured || !cloud) return { used: 0, quota: 0 };
 
@@ -104,7 +104,41 @@ export async function consumeLicense(): Promise<LicenseInfo> {
   }
   const info: LicenseInfo = { used: res.used ?? 0, quota: res.quota ?? 0 };
   saveLicense(code, info);
+  // 记录用量明细（时间 + 激活码 + 功能），最佳努力，失败不影响主流程
+  if (action) logUsage(code, action).catch(() => {});
   return info;
+}
+
+/**
+ * 写入一条用量记录（时间/激活码/功能），供后台「使用记录」展示。
+ * 仅在云端已配置时调用；失败静默忽略，不影响用户正常使用。
+ */
+export async function logUsage(code: string, action: string, detail?: string): Promise<void> {
+  if (!isCloudConfigured || !cloud) return;
+  try {
+    await callRpc("log_usage", { p_code: code, p_action: action, p_detail: detail ?? null });
+  } catch {
+    /* 记录失败不影响主流程 */
+  }
+}
+
+export interface UsageLog {
+  id: number;
+  code: string;
+  action: string;
+  detail: string | null;
+  created_at: string;
+}
+
+export async function adminListUsage(token: string) {
+  if (!isCloudConfigured || !cloud) throw new Error("请在已部署的正式站点访问后台。");
+  const { data, error } = await callRpc("admin_list_usage", { p_token: token });
+  if (error) throw error;
+  return data as {
+    ok: boolean;
+    reason?: string;
+    logs?: UsageLog[];
+  };
 }
 
 export async function adminListCodes(token: string) {

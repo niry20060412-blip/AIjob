@@ -1,13 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { navItems } from "@/lib/mockData";
 import { useLicense } from "@/components/LicenseGate";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const { info, reset } = useLicense();
+  const router = useRouter();
+  const { info, reset, reopenGuide } = useLicense();
 
   return (
     <div className="min-h-screen bg-[#f7f8fc] text-slate-900">
@@ -28,6 +29,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               <Link
                 key={item.href}
                 href={item.href}
+                data-tour={`nav-${item.href}`}
                 className={`flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium transition ${
                   active
                     ? "bg-indigo-50 text-indigo-700 shadow-sm"
@@ -60,24 +62,28 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       </aside>
 
       <div className="xl:pl-68">
-        <header className="sticky top-0 z-10 border-b border-slate-200 bg-white/80 px-5 py-4 backdrop-blur xl:hidden">
+        <header className="sticky top-0 z-10 border-b border-slate-200 bg-white/80 px-4 py-3 backdrop-blur sm:px-5 xl:hidden">
           <div className="flex items-center justify-between">
-            <div className="font-semibold text-slate-950">AI 精准求职助手</div>
+            <div className="text-sm font-semibold text-slate-950">AI 精准求职助手</div>
           </div>
-          <div className="mt-3 flex gap-2 overflow-x-auto pb-1">
-            {navItems.map((item) => (
-              <Link key={item.href} href={item.href} className="shrink-0 rounded-full border border-slate-200 bg-white px-3 py-2 text-xs text-slate-600">
-                {item.label}
-              </Link>
-            ))}
+          <div className="relative mt-2.5">
+            <div className="flex gap-2 overflow-x-auto pb-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+              {navItems.map((item) => (
+                <Link key={item.href} href={item.href} className="shrink-0 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs text-slate-600">
+                  {item.label}
+                </Link>
+              ))}
+            </div>
+            <div className="pointer-events-none absolute inset-y-0 right-0 w-8 bg-gradient-to-l from-white to-transparent" />
           </div>
         </header>
-        <main className="mx-auto max-w-7xl px-5 py-8 sm:px-8 lg:px-10">
+        <main className="mx-auto max-w-7xl px-4 py-5 sm:px-8 sm:py-8 lg:px-10">
           {children}
-          <footer className="mt-12 border-t border-slate-200 pt-6 text-xs text-slate-400">
+          <footer className="mt-10 border-t border-slate-200 pt-6 text-xs text-slate-400">
             <div className="flex flex-wrap gap-4">
               <Link href="/privacy" className="hover:text-indigo-600">隐私政策</Link>
               <Link href="/terms" className="hover:text-indigo-600">用户协议</Link>
+              <button onClick={() => { if (pathname === "/") reopenGuide(); else router.push("/?tour=1"); }} className="hover:text-indigo-600">新手引导</button>
             </div>
             <p className="mt-3 leading-5">
               AI 生成内容由人工智能模型产生，仅供参考，不构成求职、招聘或法律建议。请结合实际核验后使用，并对简历真实性与投递行为负责。

@@ -68,7 +68,7 @@ export default function Home() {
       <PageHeader
         eyebrow="AI Job Decision OS"
         title="把求职从海投，变成有策略的精准行动"
-        description="围绕用户导入的简历和岗位信息，完成简历诊断、岗位匹配、话术生成、投递管理和一周计划。首页不再展示系统预设个人记录。"
+        description="围绕你导入的简历和岗位信息，完成简历诊断、岗位匹配、话术生成、投递管理和一周计划，每一步都有 AI 帮你把方向理清楚。"
         action="开始导入简历"
       />
 
@@ -107,11 +107,11 @@ export default function Home() {
           </div>
           <div className="grid gap-4 md:grid-cols-3">
             {[
-              ["01", "导入简历", "上传或粘贴用户真实简历", "/resume-diagnosis"],
-              ["02", "导入岗位", "插件采集或粘贴 JD", "/job-matching"],
-              ["03", "生成话术", "基于当前简历和 JD 生成", "/pitch-generator"],
-            ].map(([step, title, desc, href]) => (
-              <Link key={title} href={href} className="rounded-3xl border border-slate-200 bg-slate-50 p-5 transition hover:-translate-y-1 hover:border-indigo-200 hover:bg-indigo-50/60">
+              ["01", "导入简历", "上传或粘贴用户真实简历", "/resume-diagnosis", "step-resume"],
+              ["02", "导入岗位", "插件采集或粘贴 JD", "/job-matching", "step-match"],
+              ["03", "生成话术", "基于当前简历和 JD 生成", "/pitch-generator", "step-pitch"],
+            ].map(([step, title, desc, href, tour]) => (
+              <Link key={title} href={href} data-tour={tour} className="rounded-3xl border border-slate-200 bg-slate-50 p-5 transition hover:-translate-y-1 hover:border-indigo-200 hover:bg-indigo-50/60">
                 <span className="text-sm font-bold text-indigo-600">{step}</span>
                 <h3 className="mt-4 font-semibold text-slate-950">{title}</h3>
                 <p className="mt-2 text-sm leading-6 text-slate-500">{desc}</p>
@@ -138,7 +138,7 @@ export default function Home() {
             <div className="mt-5 rounded-3xl border border-dashed border-slate-200 bg-slate-50 p-6 text-center">
               <p className="font-semibold text-slate-950">还没有导入简历</p>
               <p className="mt-2 text-sm leading-6 text-slate-500">请先进入简历诊断页上传或粘贴简历。系统不会再使用自带模拟简历。</p>
-              <Link href="/resume-diagnosis" className="mt-5 inline-flex rounded-2xl bg-indigo-600 px-5 py-3 text-sm font-semibold text-white">
+              <Link href="/resume-diagnosis" data-tour="resume-cta" className="mt-5 inline-flex rounded-2xl bg-indigo-600 px-5 py-3 text-sm font-semibold text-white">
                 去导入简历
               </Link>
             </div>

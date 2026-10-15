@@ -1,15 +1,43 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { AppShell } from "@/components/AppShell";
 import { FileTextUploader } from "@/components/FileTextUploader";
-import { Badge, Card, PageHeader } from "@/components/Ui";
+import { Badge, Card, PageHeader, ProgressBar } from "@/components/Ui";
 import Link from "next/link";
-import { saveJobFlowContext } from "@/lib/flowContext";
-import { buildOpportunityJd, searchRecentJobOpportunities, type JobOpportunity } from "@/lib/jobOpportunities";
 import { normalizeAiError } from "@/lib/aiClient";
 import { analyzeResumeWithAi, type JobRecommendation, type ResumeAnalysisResult } from "@/lib/resumeAnalyzer";
 import { clearStoredResume, loadStoredResume, saveStoredResume } from "@/lib/resumeStore";
+
+// 分析结果本地缓存：切走窗口/刷新页面后仍可恢复，避免重复等待
+const analysisCacheKey = "ai-job-assistant-resume-analysis-v1";
+
+function loadCachedAnalysis(): { resumeText: string; result: ResumeAnalysisResult } | null {
+  if (typeof window === "undefined" || typeof window.localStorage === "undefined") return null;
+  try {
+    const raw = window.localStorage.getItem(analysisCacheKey);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as { resumeText: string; result: ResumeAnalysisResult };
+    if (!parsed?.result || typeof parsed.resumeText !== "string") return null;
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
+function saveCachedAnalysis(resumeText: string, result: ResumeAnalysisResult) {
+  if (typeof window === "undefined" || typeof window.localStorage === "undefined") return;
+  try {
+    window.localStorage.setItem(analysisCacheKey, JSON.stringify({ resumeText, result }));
+  } catch {
+    // 存储满等异常不影响主流程
+  }
+}
+
+function clearCachedAnalysis() {
+  if (typeof window === "undefined" || typeof window.localStorage === "undefined") return;
+  window.localStorage.removeItem(analysisCacheKey);
+}
 
 const recommendationLabels = {
   primary: "主推岗位",
@@ -41,6 +69,15 @@ function ListBlock({ title, items }: { title: string; items: string[] }) {
   );
 }
 
+// 分析等待阶段的提示文案（按已等待秒数切换），避免用户干等无反馈
+const analysisStages = [
+  { after: 0, label: "已提交简历，AI 正在读取内容…" },
+  { after: 8, label: "AI 正在提炼经历、技能和优劣势…" },
+  { after: 18, label: "AI 正在生成候选人画像…" },
+  { after: 30, label: "AI 正在整理岗位推荐，即将完成…" },
+  { after: 50, label: "内容较多的简历会多花一点时间，请稍候…" },
+];
+
 function RecommendationCard({ job }: { job: JobRecommendation }) {
   return (
     <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
@@ -62,71 +99,43 @@ function RecommendationCard({ job }: { job: JobRecommendation }) {
   );
 }
 
-function OpportunityCard({ opportunity, resumeText }: { opportunity: JobOpportunity; resumeText: string }) {
-  const verificationTone = opportunity.verification.status === "已核查" ? "green" : opportunity.verification.status === "需复核" ? "amber" : "rose";
-  const jdText = buildOpportunityJd(opportunity);
-
-  return (
-    <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-      <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-        <div>
-          <div className="flex flex-wrap items-center gap-2">
-            <h4 className="font-semibold text-slate-950">{opportunity.title}</h4>
-            <Badge>{opportunity.fitScore}%</Badge>
-            <Badge tone={verificationTone}>{opportunity.verification.status}</Badge>
-          </div>
-          <p className="mt-2 text-sm text-slate-600">{opportunity.companyName} · {opportunity.city} · {opportunity.salary}</p>
-          <p className="mt-1 text-xs text-slate-400">{opportunity.platform} · {opportunity.freshness}发布 · {opportunity.postedAt}</p>
-        </div>
-        <Link href={`/job-opportunities/${opportunity.id}`} className="rounded-2xl border border-slate-200 px-4 py-2 text-center text-xs font-semibold text-slate-600 transition hover:bg-slate-50">
-          查看岗位详情
-        </Link>
-      </div>
-      <p className="mt-4 text-sm leading-6 text-slate-500">{opportunity.matchReason}</p>
-      <div className="mt-4 grid gap-3 md:grid-cols-2">
-        <div className="rounded-2xl bg-emerald-50 p-4">
-          <p className="text-xs font-semibold text-emerald-700">企业正规性核查</p>
-          <ul className="mt-2 space-y-1 text-xs leading-5 text-emerald-800">
-            {opportunity.verification.checks.map((item) => <li key={item}>· {item}</li>)}
-          </ul>
-        </div>
-        <div className="rounded-2xl bg-amber-50 p-4">
-          <p className="text-xs font-semibold text-amber-700">投递前风险复核</p>
-          <ul className="mt-2 space-y-1 text-xs leading-5 text-amber-800">
-            {opportunity.verification.risks.map((item) => <li key={item}>· {item}</li>)}
-          </ul>
-        </div>
-      </div>
-      <div className="mt-4 flex flex-col gap-3 sm:flex-row">
-        <Link
-          href="/job-matching"
-          onClick={() => saveJobFlowContext({ resumeText, jdText, jobTitle: opportunity.title, companyName: opportunity.companyName, matchScore: opportunity.fitScore, recommendation: opportunity.fitScore >= 75 ? "建议投递" : "谨慎投递", source: "resume-diagnosis" })}
-          className="rounded-2xl bg-indigo-600 px-4 py-2 text-center text-xs font-semibold text-white transition hover:bg-indigo-700"
-        >
-          去做 JD 匹配
-        </Link>
-        <Link
-          href="/pitch-generator"
-          onClick={() => saveJobFlowContext({ resumeText, jdText, jobTitle: opportunity.title, companyName: opportunity.companyName, matchScore: opportunity.fitScore, recommendation: opportunity.fitScore >= 75 ? "建议投递" : "谨慎投递", source: "resume-diagnosis" })}
-          className="rounded-2xl border border-indigo-200 bg-indigo-50 px-4 py-2 text-center text-xs font-semibold text-indigo-700 transition hover:bg-indigo-100"
-        >
-          生成投递话术
-        </Link>
-      </div>
-    </div>
-  );
-}
-
 export default function ResumeDiagnosisPage() {
   const [resumeText, setResumeText] = useState(() => loadStoredResume()?.text || "");
-  const [result, setResult] = useState<ResumeAnalysisResult | null>(null);
+  const [result, setResult] = useState<ResumeAnalysisResult | null>(() => {
+    const cached = loadCachedAnalysis();
+    const stored = loadStoredResume();
+    // 仅当缓存的分析对应的就是当前简历文本时才恢复，避免张冠李戴
+    if (cached && stored && cached.resumeText.trim() === stored.text.trim()) {
+      return cached.result;
+    }
+    return null;
+  });
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
+  const [elapsed, setElapsed] = useState(0);
+
+  // 分析进行中每秒累计已等待时间，用于进度提示
+  useEffect(() => {
+    if (!isAnalyzing) return;
+    setElapsed(0);
+    const timer = window.setInterval(() => setElapsed((value) => value + 1), 1000);
+    return () => window.clearInterval(timer);
+  }, [isAnalyzing]);
+
+  const stageLabel = [...analysisStages].reverse().find((stage) => elapsed >= stage.after)?.label || analysisStages[0].label;
+  const estimatedProgress = Math.min(92, Math.round((elapsed / 40) * 100));
+
+  // 长时间分析时切走窗口再回来，Chrome 可能丢弃后台页面并重载——重载后恢复之前的结果
+  useEffect(() => {
+    if (result) return;
+    const cached = loadCachedAnalysis();
+    const stored = loadStoredResume();
+    if (cached && stored && cached.resumeText.trim() === stored.text.trim()) {
+      setResult(cached.result);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const characterCount = useMemo(() => resumeText.trim().length, [resumeText]);
-  const opportunities = useMemo(() => {
-    if (!result) return [];
-    return searchRecentJobOpportunities(result.profile, result.recommendations.primary);
-  }, [result]);
 
   function updateResumeText(text: string, source: "manual" | "upload" = "manual") {
     setResumeText(text);
@@ -137,6 +146,7 @@ export default function ResumeDiagnosisPage() {
     } else {
       clearStoredResume();
     }
+    clearCachedAnalysis();
   }
 
   async function handleAnalyze() {
@@ -144,7 +154,9 @@ export default function ResumeDiagnosisPage() {
     setIsAnalyzing(true);
     try {
       saveStoredResume(resumeText, "manual");
-      setResult(await analyzeResumeWithAi(resumeText));
+      const analysis = await analyzeResumeWithAi(resumeText);
+      setResult(analysis);
+      saveCachedAnalysis(resumeText, analysis);
     } catch (error) {
       setErrorMessage(normalizeAiError(error));
     } finally {
@@ -163,11 +175,13 @@ export default function ResumeDiagnosisPage() {
 
       <div className="grid gap-6 lg:grid-cols-[0.9fr_1.1fr]">
         <div className="space-y-6">
-          <FileTextUploader
-            label="上传简历附件"
-            helperText="上传后会自动提取文本并填入下方文本框，你可以先删除隐私信息再分析。"
-            onTextExtracted={(text) => updateResumeText(text, "upload")}
-          />
+          <div data-tour="resume-upload" className="scroll-mt-24">
+            <FileTextUploader
+              label="上传简历附件"
+              helperText="上传后会自动提取文本并填入下方文本框，你可以先删除隐私信息再分析。"
+              onTextExtracted={(text) => updateResumeText(text, "upload")}
+            />
+          </div>
           <Card>
           <div className="flex items-start justify-between gap-4">
             <div>
@@ -186,9 +200,10 @@ export default function ResumeDiagnosisPage() {
             <button
               onClick={handleAnalyze}
               disabled={isAnalyzing}
+              data-tour="start-analyze"
               className="rounded-2xl bg-gradient-to-r from-indigo-600 to-violet-600 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-indigo-100 transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              {isAnalyzing ? "AI 分析中..." : "开始分析"}
+              {isAnalyzing ? `AI 分析中… ${elapsed}s` : "开始分析"}
             </button>
             <button
               onClick={() => {
@@ -238,56 +253,60 @@ export default function ResumeDiagnosisPage() {
           </Card>
         ) : (
           <Card>
-            <div className="flex h-full min-h-96 flex-col items-center justify-center rounded-[2rem] border border-dashed border-slate-200 bg-slate-50 text-center">
-              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-indigo-50 text-2xl text-indigo-600">◐</div>
-              <h2 className="mt-5 text-xl font-bold text-slate-950">等待分析</h2>
-              <p className="mt-2 max-w-sm text-sm leading-6 text-slate-500">粘贴简历后点击“开始分析”，这里会展示结构化候选人画像。</p>
-            </div>
+            {isAnalyzing ? (
+              <div className="flex h-full min-h-96 flex-col items-center justify-center rounded-[2rem] border border-indigo-100 bg-indigo-50/50 px-6 text-center">
+                <div className="flex h-14 w-14 animate-pulse items-center justify-center rounded-2xl bg-indigo-100 text-2xl text-indigo-600">◐</div>
+                <h2 className="mt-5 text-xl font-bold text-slate-950">AI 分析中 · 已等待 {elapsed} 秒</h2>
+                <p className="mt-2 text-sm font-medium text-indigo-600">{stageLabel}</p>
+                <div className="mt-6 w-full max-w-sm">
+                  <div className="mb-2 flex justify-between text-xs text-slate-500">
+                    <span>通常 20~60 秒完成</span>
+                    <span>{estimatedProgress}%</span>
+                  </div>
+                  <ProgressBar value={estimatedProgress} />
+                </div>
+                <p className="mt-5 max-w-sm text-xs leading-5 text-slate-400">分析期间可以切走页面，结果完成后会自动保存在本地，回到本页不会丢失。</p>
+              </div>
+            ) : (
+              <div className="flex h-full min-h-96 flex-col items-center justify-center rounded-[2rem] border border-dashed border-slate-200 bg-slate-50 text-center">
+                <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-indigo-50 text-2xl text-indigo-600">◐</div>
+                <h2 className="mt-5 text-xl font-bold text-slate-950">等待分析</h2>
+                <p className="mt-2 max-w-sm text-sm leading-6 text-slate-500">粘贴简历后点击“开始分析”，这里会展示结构化候选人画像。</p>
+              </div>
+            )}
           </Card>
         )}
       </div>
 
       {result ? (
         <>
-          <Card className="mt-6">
-            <div className="mb-6 flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
-              <div>
-                <h2 className="text-xl font-bold text-slate-950">推荐岗位方向</h2>
-                <p className="mt-2 text-sm text-slate-500">按主推、拓展、冲刺和不建议四类输出，便于后续做精准投递策略。</p>
-              </div>
-              <Badge>结构化输出</Badge>
-            </div>
-            <div className="grid gap-5 xl:grid-cols-2">
-              {(Object.keys(recommendationLabels) as Array<keyof typeof recommendationLabels>).map((key) => (
-                <div key={key} className="rounded-[1.75rem] bg-slate-50 p-5">
-                  <div className="mb-4">
-                    <h3 className="font-bold text-slate-950">{recommendationLabels[key]}</h3>
-                    <p className="mt-1 text-sm text-slate-500">{recommendationDescriptions[key]}</p>
-                  </div>
-                  <div className="space-y-4">
-                    {result.recommendations[key].map((job) => (
-                      <RecommendationCard key={job.title} job={job} />
-                    ))}
-                  </div>
+          <div data-tour="result-section" className="mt-6 scroll-mt-24">
+            <Card>
+              <div className="mb-6 flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
+                <div>
+                  <h2 className="text-xl font-bold text-slate-950">推荐岗位方向</h2>
+                  <p className="mt-2 text-sm text-slate-500">按主推、拓展、冲刺和不建议四类输出，便于后续做精准投递策略。</p>
                 </div>
-              ))}
-            </div>
-          </Card>
-
-          <Card className="mt-6">
-            <div className="mb-6 flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
-              <div>
-                <h2 className="text-xl font-bold text-slate-950">近期可投递岗位机会</h2>
-                <p className="mt-2 text-sm leading-6 text-slate-500">MVP 版使用本地 mock 的近期岗位池演示“全网岗位推荐 + 企业正规性核查”流程；正式版可接招聘平台搜索、工商信息和黑名单风控数据源。</p>
+                <Badge>结构化输出</Badge>
               </div>
-              <Badge tone="green">近 14 天优先</Badge>
-            </div>
-            <div className="grid gap-5 xl:grid-cols-2">
-              {opportunities.map((opportunity) => (
-                <OpportunityCard key={opportunity.id} opportunity={opportunity} resumeText={resumeText} />
-              ))}
-            </div>
-          </Card>
+              <div className="grid gap-5 xl:grid-cols-2">
+                {(Object.keys(recommendationLabels) as Array<keyof typeof recommendationLabels>).map((key) => (
+                  <div key={key} className="rounded-[1.75rem] bg-slate-50 p-5">
+                    <div className="mb-4">
+                      <h3 className="font-bold text-slate-950">{recommendationLabels[key]}</h3>
+                      <p className="mt-1 text-sm text-slate-500">{recommendationDescriptions[key]}</p>
+                    </div>
+                    <div className="space-y-4">
+                      {result.recommendations[key].map((job) => (
+                        <RecommendationCard key={job.title} job={job} />
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </Card>
+          </div>
+
         </>
       ) : null}
     </AppShell>

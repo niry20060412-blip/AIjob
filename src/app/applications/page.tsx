@@ -35,51 +35,6 @@ const statusTone: Record<ApplicationStatus, "indigo" | "slate" | "green" | "ambe
   暂缓: "slate",
 };
 
-const initialApplications: ApplicationRecord[] = [
-  {
-    id: "app-1",
-    companyName: "澜舟智能",
-    jobTitle: "AI 产品经理",
-    platform: "Boss 直聘",
-    city: "北京",
-    salary: "25-40K",
-    jobLink: "https://example.com/jobs/ai-pm",
-    matchScore: 92,
-    status: "已回复",
-    appliedDate: "2026-10-11",
-    followUpDate: "2026-10-14",
-    note: "已发送高匹配强调型话术，等待约面。",
-  },
-  {
-    id: "app-2",
-    companyName: "青藤科技",
-    jobTitle: "增长产品经理",
-    platform: "拉勾",
-    city: "上海",
-    salary: "20-35K",
-    jobLink: "https://example.com/jobs/growth-pm",
-    matchScore: 86,
-    status: "已投递",
-    appliedDate: "2026-10-10",
-    followUpDate: "2026-10-13",
-    note: "需要补充 A/B 测试项目细节。",
-  },
-  {
-    id: "app-3",
-    companyName: "灵犀协作",
-    jobTitle: "B 端产品经理",
-    platform: "脉脉",
-    city: "深圳",
-    salary: "22-38K",
-    jobLink: "https://example.com/jobs/b2b-pm",
-    matchScore: 78,
-    status: "面试中",
-    appliedDate: "2026-10-09",
-    followUpDate: "2026-10-12",
-    note: "准备 SaaS 权限体系和数据看板项目案例。",
-  },
-];
-
 const emptyForm: Omit<ApplicationRecord, "id"> = {
   companyName: "",
   jobTitle: "",
@@ -119,15 +74,17 @@ const inputClass = "w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 
 
 export default function ApplicationsPage() {
   const [records, setRecords] = useState<ApplicationRecord[]>(() => {
-    if (typeof window === "undefined") return initialApplications;
+    if (typeof window === "undefined") return [];
 
     const saved = window.localStorage.getItem(storageKey);
-    if (!saved) return initialApplications;
+    if (!saved) return [];
 
     try {
-      return JSON.parse(saved) as ApplicationRecord[];
+      // 过滤掉早期内置的 3 条演示记录（app-1/app-2/app-3），用户真实添加的记录不受影响
+      const parsed = JSON.parse(saved) as ApplicationRecord[];
+      return Array.isArray(parsed) ? parsed.filter((item) => !["app-1", "app-2", "app-3"].includes(item?.id)) : [];
     } catch {
-      return initialApplications;
+      return [];
     }
   });
   const [form, setForm] = useState(emptyForm);
@@ -197,15 +154,15 @@ export default function ApplicationsPage() {
       </div>
 
       <div className="mt-6 grid gap-6 xl:grid-cols-[0.88fr_1.12fr]">
-        <Card>
+        <Card data-tour="application-form">
           <h2 className="text-xl font-bold text-slate-950">新增投递记录</h2>
           <p className="mt-2 text-sm leading-6 text-slate-500">公司和岗位为必填；其他字段可先粗略记录，后续跟进时再补充。</p>
           <form onSubmit={handleSubmit} className="mt-5 grid gap-4 md:grid-cols-2">
             <Field label="公司名称">
-              <input className={inputClass} value={form.companyName} onChange={(event) => updateForm("companyName", event.target.value)} placeholder="如：澜舟智能" />
+              <input className={inputClass} value={form.companyName} onChange={(event) => updateForm("companyName", event.target.value)} placeholder="请输入公司名称" />
             </Field>
             <Field label="岗位名称">
-              <input className={inputClass} value={form.jobTitle} onChange={(event) => updateForm("jobTitle", event.target.value)} placeholder="如：AI 产品经理" />
+              <input className={inputClass} value={form.jobTitle} onChange={(event) => updateForm("jobTitle", event.target.value)} placeholder="请输入岗位名称" />
             </Field>
             <Field label="平台来源">
               <input className={inputClass} value={form.platform} onChange={(event) => updateForm("platform", event.target.value)} placeholder="Boss 直聘 / 拉勾 / 内推" />
