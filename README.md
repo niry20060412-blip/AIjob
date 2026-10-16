@@ -114,43 +114,43 @@ npm start
 ### 激活门禁（买家入口）
 打开站点即见激活弹窗，输入激活码解锁全部 AI 功能；尚未购买可扫码联系卖家。
 
-![激活门禁](assets/showcase/00-gate.png)
+![激活门禁](https://job.niry.cn/showcase/00-gate.png)
 
 ### 首页 / 工作流入口
 白底卡片 + 蓝紫主色轻量 SaaS 风格，串联完整工作流，无注册登录，输入激活码即用。
 
-![首页](assets/showcase/01-home.png)
+![首页](https://job.niry.cn/showcase/01-home.png)
 
 ### 简历诊断
 粘贴 / 上传简历后，AI 生成候选人画像、能力结构、优势、短板与岗位推荐。
 
-![简历诊断-输入](assets/showcase/02-resume-input.png)
-![简历诊断-分析中](assets/showcase/03-resume-analyzing.png)
-![简历诊断-结果](assets/showcase/04-resume-result.png)
+![简历诊断-输入](https://job.niry.cn/showcase/02-resume-input.png)
+![简历诊断-分析中](https://job.niry.cn/showcase/03-resume-analyzing.png)
+![简历诊断-结果](https://job.niry.cn/showcase/04-resume-result.png)
 
 ### 岗位匹配
 输入简历 + 岗位 JD，AI 分析匹配度、缺失点、简历修改建议与投递策略。
 
-![岗位匹配-输入](assets/showcase/05-matching-input.png)
-![岗位匹配-分析中](assets/showcase/05b-matching-analyzing.png)
-![岗位匹配-结果](assets/showcase/06-matching-result.png)
+![岗位匹配-输入](https://job.niry.cn/showcase/05-matching-input.png)
+![岗位匹配-分析中](https://job.niry.cn/showcase/05b-matching-analyzing.png)
+![岗位匹配-结果](https://job.niry.cn/showcase/06-matching-result.png)
 
 ### 投递话术
 一键生成 4 种风格的自然投递话术，支持单条复制。
 
-![话术生成-输入](assets/showcase/07-pitch-input.png)
-![话术生成-结果](assets/showcase/08-pitch-result.png)
+![话术生成-输入](https://job.niry.cn/showcase/07-pitch-input.png)
+![话术生成-结果](https://job.niry.cn/showcase/08-pitch-result.png)
 
 ### 投递管理
 记录每次投递的公司、岗位、状态，数据本地保存，可追踪回复 / 面试 / Offer 进展。
 
-![投递管理](assets/showcase/09-applications.png)
+![投递管理](https://job.niry.cn/showcase/09-applications.png)
 
 ### 一周计划
 基于当前简历与目标岗位，AI 生成 7 天行动计划，按天拆解任务。
 
-![一周计划](assets/showcase/10-weekly-plan.png)
-![一周计划-生成结果](assets/showcase/10b-weekly-plan-result.png)
+![一周计划](https://job.niry.cn/showcase/10-weekly-plan.png)
+![一周计划-生成结果](https://job.niry.cn/showcase/10b-weekly-plan-result.png)
 
 ### 购买 / 合作
 本产品为可商用部署版本，按激活码限流、AI 由卖家云端提供、数据本地保存。需要激活码或定制部署，请打开 https://job.niry.cn，在激活弹窗中扫码联系作者。

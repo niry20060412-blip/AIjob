@@ -9,7 +9,7 @@
 
 打开站点即见激活弹窗：输入激活码解锁全部 AI 功能；尚未购买时，可扫码联系卖家获取激活码。
 
-![激活门禁](assets/showcase/00-gate.png)
+![激活门禁](https://job.niry.cn/showcase/00-gate.png)
 
 ---
 
@@ -17,7 +17,7 @@
 
 白底卡片 + 蓝紫主色的轻量 SaaS 风格。首页串联「简历诊断 → 岗位匹配 → 投递话术 → 投递管理 → 一周计划」整套工作流，无注册登录，输入激活码即用。
 
-![首页](assets/showcase/01-home.png)
+![首页](https://job.niry.cn/showcase/01-home.png)
 
 ---
 
@@ -27,15 +27,15 @@
 
 **输入界面：**
 
-![简历诊断-输入](assets/showcase/02-resume-input.png)
+![简历诊断-输入](https://job.niry.cn/showcase/02-resume-input.png)
 
 **分析进行中（倒计时 + 进度条）：**
 
-![简历诊断-分析中](assets/showcase/03-resume-analyzing.png)
+![简历诊断-分析中](https://job.niry.cn/showcase/03-resume-analyzing.png)
 
 **诊断结果：**
 
-![简历诊断-结果](assets/showcase/04-resume-result.png)
+![简历诊断-结果](https://job.niry.cn/showcase/04-resume-result.png)
 
 ---
 
@@ -45,15 +45,15 @@
 
 **输入界面：**
 
-![岗位匹配-输入](assets/showcase/05-matching-input.png)
+![岗位匹配-输入](https://job.niry.cn/showcase/05-matching-input.png)
 
 **匹配分析进行中：**
 
-![岗位匹配-分析中](assets/showcase/05b-matching-analyzing.png)
+![岗位匹配-分析中](https://job.niry.cn/showcase/05b-matching-analyzing.png)
 
 **匹配结果：**
 
-![岗位匹配-结果](assets/showcase/06-matching-result.png)
+![岗位匹配-结果](https://job.niry.cn/showcase/06-matching-result.png)
 
 ---
 
@@ -63,11 +63,11 @@
 
 **输入界面：**
 
-![话术生成-输入](assets/showcase/07-pitch-input.png)
+![话术生成-输入](https://job.niry.cn/showcase/07-pitch-input.png)
 
 **生成结果：**
 
-![话术生成-结果](assets/showcase/08-pitch-result.png)
+![话术生成-结果](https://job.niry.cn/showcase/08-pitch-result.png)
 
 ---
 
@@ -75,7 +75,7 @@
 
 记录每次投递的公司、岗位、状态，数据保存在浏览器本地，可追踪回复 / 面试 / Offer 进展。
 
-![投递管理](assets/showcase/09-applications.png)
+![投递管理](https://job.niry.cn/showcase/09-applications.png)
 
 ---
 
@@ -85,11 +85,11 @@
 
 **生成设置（简历自动同步 + 选方向）：**
 
-![一周计划](assets/showcase/10-weekly-plan.png)
+![一周计划](https://job.niry.cn/showcase/10-weekly-plan.png)
 
 **生成结果（7 天行动计划，按天拆解任务）：**
 
-![一周计划-生成结果](assets/showcase/10b-weekly-plan-result.png)
+![一周计划-生成结果](https://job.niry.cn/showcase/10b-weekly-plan-result.png)
 
 ---
 
