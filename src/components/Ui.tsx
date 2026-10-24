@@ -1,12 +1,22 @@
+"use client";
+
+import { useLicense } from "@/components/LicenseGate";
+
 export function PageHeader({ eyebrow, title, description, action }: { eyebrow: string; title: string; description: string; action?: string }) {
+  // 演示模式下把「真实 AI 分析」改成「本地规则分析」，避免与顶部演示提示自相矛盾
+  const { isDemo } = useLicense();
+  const actionLabel = isDemo && action ? "本地规则分析" : action;
+  const desc = isDemo
+    ? "演示模式下不调用云端模型，分析结果由本地规则生成，用于展示产品界面与完整流程。"
+    : description;
   return (
     <div className="mb-5 flex flex-col gap-4 rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm sm:mb-8 sm:gap-5 sm:p-7 lg:flex-row lg:items-end lg:justify-between">
       <div>
         <p className="mb-1.5 text-xs font-semibold text-indigo-600 sm:mb-3 sm:text-sm">{eyebrow}</p>
         <h1 className="text-2xl font-bold tracking-tight text-slate-950 sm:text-3xl md:text-4xl">{title}</h1>
-        <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-500 sm:mt-3 md:text-base">{description}</p>
+        <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-500 sm:mt-3 md:text-base">{desc}</p>
       </div>
-      {action ? <button className="rounded-2xl bg-gradient-to-r from-indigo-600 to-violet-600 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-indigo-100 sm:py-3">{action}</button> : null}
+      {actionLabel ? <button className="rounded-2xl bg-gradient-to-r from-indigo-600 to-violet-600 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-indigo-100 sm:py-3">{actionLabel}</button> : null}
     </div>
   );
 }
