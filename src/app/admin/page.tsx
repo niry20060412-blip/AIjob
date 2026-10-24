@@ -1,10 +1,18 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { adminCreateCodes, adminListCodes, adminListUsage, type UsageLog } from "@/lib/licenseClient";
+import {
+  AdminAuthError,
+  AdminConfigError,
+  adminCreateCodes,
+  adminListCodes,
+  adminListUsage,
+  isAdminCloudConfigured,
+  type UsageLog,
+} from "@/lib/adminClient";
 
-// 后台免口令：打开即进入（卖家自用后台，按用户要求不设登录门禁）
-const ADMIN_TOKEN = "dbcc8c1aee94f04d7d473575";
+// 后台口令只在本标签页内暂存，关掉标签页即失效；真 token 只在服务端
+const PASS_STORE_KEY = "aja_admin_pass";
 
 // 用量动作 -> 中文展示名
 const ACTION_LABELS: Record<string, string> = {
@@ -29,26 +37,78 @@ export default function AdminPage() {
   const [quota, setQuota] = useState(100);
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
+  // 后台口令：进入前必须输入，服务端校验；不写死在前端
+  const [pass, setPass] = useState("");
+  const [passInput, setPassInput] = useState("");
+  const [authed, setAuthed] = useState(false);
+  const [authError, setAuthError] = useState("");
+  const [checking, setChecking] = useState(false);
 
-  // 打开即加载数据，无需登录
+  async function enter(candidate: string, silent = false) {
+    const value = candidate.trim();
+    if (!value) {
+      if (!silent) setAuthError("请输入后台口令");
+      return;
+    }
+    setChecking(true);
+    if (!silent) setAuthError("");
+    try {
+      const res = await adminListCodes(value);
+      if (!res.ok) {
+        setAuthError("口令不正确，或服务端拒绝访问。");
+        return;
+      }
+      setRows(res.codes || []);
+      setPass(value);
+      setAuthed(true);
+      try {
+        window.sessionStorage.setItem(PASS_STORE_KEY, value);
+      } catch {
+        /* 隐私模式忽略 */
+      }
+      try {
+        const usage = await adminListUsage(value);
+        if (usage.ok) setLogs(usage.logs || []);
+      } catch {
+        /* 用量拉取失败不影响主流程 */
+      }
+    } catch (e) {
+      if (e instanceof AdminAuthError) setAuthError("口令不正确。");
+      else if (e instanceof AdminConfigError) setAuthError(e.message);
+      else setAuthError(e instanceof Error ? e.message : "无法连接后台服务。");
+    } finally {
+      setChecking(false);
+    }
+  }
+
+  // 本标签页内刷新不必重输口令（关掉标签页就失效）
   /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
-    (async () => {
-      try {
-        const res = await adminListCodes(ADMIN_TOKEN);
-        if (res.ok) setRows(res.codes || []);
-      } catch {
-        /* 忽略加载错误 */
-      }
-      try {
-        const res = await adminListUsage(ADMIN_TOKEN);
-        if (res.ok) setLogs(res.logs || []);
-      } catch {
-        /* 忽略加载错误 */
-      }
-    })();
+    let saved = "";
+    try {
+      saved = window.sessionStorage.getItem(PASS_STORE_KEY) || "";
+    } catch {
+      saved = "";
+    }
+    if (saved) void enter(saved, true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   /* eslint-enable react-hooks/set-state-in-effect */
+
+  function signOut() {
+    try {
+      window.sessionStorage.removeItem(PASS_STORE_KEY);
+    } catch {
+      /* 忽略 */
+    }
+    setPass("");
+    setPassInput("");
+    setAuthed(false);
+    setRows([]);
+    setLogs([]);
+    setMessage("");
+    setAuthError("");
+  }
 
   // 用量统计：每激活码「已用」即买家 AI 分析总次数；token/成本为估算值（仅供参考）
   const stats = useMemo(() => {
@@ -64,19 +124,62 @@ export default function AdminPage() {
     setBusy(true);
     setMessage("");
     try {
-      const res = await adminCreateCodes(ADMIN_TOKEN, count, quota);
+      const res = await adminCreateCodes(pass, count, quota);
       if (!res.ok) {
         setMessage("生成失败：" + (res.reason || "未知错误"));
         return;
       }
       setMessage(`已生成 ${res.codes?.length ?? 0} 个激活码（每个 ${quota} 次）。`);
-      const list = await adminListCodes(ADMIN_TOKEN);
+      const list = await adminListCodes(pass);
       if (list.ok) setRows(list.codes || []);
     } catch (e) {
-      setMessage(e instanceof Error ? e.message : "生成失败");
+      if (e instanceof AdminAuthError) {
+        setMessage("口令已失效，请重新输入。");
+        signOut();
+      } else {
+        setMessage(e instanceof Error ? e.message : "生成失败");
+      }
     } finally {
       setBusy(false);
     }
+  }
+
+  // 未通过口令校验前，不渲染任何后台数据
+  if (!authed) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-[#f7f8fc] px-4 py-10">
+        <div className="w-full max-w-sm rounded-3xl bg-white p-7 shadow-sm">
+          <h1 className="text-lg font-bold text-slate-950">激活码管理后台</h1>
+          <p className="mt-1 text-xs leading-5 text-slate-500">
+            请输入后台口令。口令由服务端校验，网页源码里不含管理凭证。
+          </p>
+          {!isAdminCloudConfigured ? (
+            <p className="mt-4 rounded-2xl bg-amber-50 px-4 py-3 text-xs leading-5 text-amber-700">
+              当前站点构建时未配置云端密钥，后台无法连接云端。需要先用 NEXT_PUBLIC_CLOUD_PUBLISHABLE_KEY 重新构建。
+            </p>
+          ) : null}
+          <input
+            type="password"
+            value={passInput}
+            autoFocus
+            onChange={(e) => setPassInput(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && !checking) void enter(passInput);
+            }}
+            placeholder="后台口令"
+            className="mt-5 w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-indigo-400"
+          />
+          {authError ? <p className="mt-2 text-xs text-rose-500">{authError}</p> : null}
+          <button
+            onClick={() => void enter(passInput)}
+            disabled={checking}
+            className="mt-5 w-full rounded-2xl bg-indigo-600 py-3 text-sm font-medium text-white transition hover:bg-indigo-700 disabled:opacity-60"
+          >
+            {checking ? "校验中…" : "进入后台"}
+          </button>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -84,6 +187,9 @@ export default function AdminPage() {
       <div className="mx-auto max-w-3xl">
         <div className="flex items-center justify-between">
           <h1 className="text-xl font-bold text-slate-950">激活码管理后台</h1>
+          <button onClick={signOut} className="text-xs text-slate-400 hover:text-indigo-600">
+            退出后台
+          </button>
         </div>
 
         <div className="mt-6 rounded-3xl bg-white p-6 shadow-sm">
