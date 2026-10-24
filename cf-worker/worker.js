@@ -40,6 +40,23 @@ export default {
     }
 
     // 其余路径走静态资源
-    return env.ASSETS.fetch(request);
+    const resp = await env.ASSETS.fetch(request);
+
+    // HTML 一律要求边缘回源校验（no-cache），不带强缓存。
+    // 原因：页面里引用的 JS/CSS 都带内容哈希，一旦边缘继续返回旧 HTML，
+    // 它指向的旧 chunk 在新版本里已经不存在，访客会白屏或功能错乱；
+    // 反过来新的 HTML 也必须能被旧缓存住的页面刷到，部署才能真正生效。
+    const contentType = resp.headers.get("Content-Type") || "";
+    if (contentType.includes("text/html")) {
+      const headers = new Headers(resp.headers);
+      headers.set("Cache-Control", "no-cache, must-revalidate");
+      return new Response(resp.body, {
+        status: resp.status,
+        statusText: resp.statusText,
+        headers,
+      });
+    }
+
+    return resp;
   },
 };

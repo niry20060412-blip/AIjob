@@ -8,7 +8,7 @@ import Link from "next/link";
 import { normalizeAiError } from "@/lib/aiClient";
 import { analyzeResumeWithAi, type JobRecommendation, type ResumeAnalysisResult } from "@/lib/resumeAnalyzer";
 import { clearStoredResume, loadStoredResume, saveStoredResume } from "@/lib/resumeStore";
-import { isDemoMode } from "@/lib/demoMode";
+import { useIsDemo } from "@/components/LicenseGate";
 import { SAMPLE_RESUME } from "@/lib/demoSamples";
 
 // 分析结果本地缓存：切走窗口/刷新页面后仍可恢复，避免重复等待
@@ -140,13 +140,14 @@ export default function ResumeDiagnosisPage() {
   const characterCount = useMemo(() => resumeText.trim().length, [resumeText]);
 
   // 演示模式：预填示例简历，访客点开就能直接看效果（正常访问时输入框仍为空）
+  const isDemo = useIsDemo();
   const demoFilled = useRef(false);
   useEffect(() => {
-    if (demoFilled.current || !isDemoMode()) return;
+    if (demoFilled.current || !isDemo) return;
     if (resumeText.trim() || loadStoredResume()) return;
     demoFilled.current = true;
     setResumeText(SAMPLE_RESUME);
-  }, [resumeText]);
+  }, [isDemo, resumeText]);
 
   function updateResumeText(text: string, source: "manual" | "upload" = "manual") {
     setResumeText(text);

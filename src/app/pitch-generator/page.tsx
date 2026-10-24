@@ -7,7 +7,7 @@ import { loadJobFlowContext, type JobFlowContext } from "@/lib/flowContext";
 import { generateApplicationMessagesWithAi, type ApplicationMessage, type ApplicationMessagesResult } from "@/lib/messageGenerator";
 import { normalizeAiError } from "@/lib/aiClient";
 import { clearStoredResume, loadStoredResume, saveStoredResume } from "@/lib/resumeStore";
-import { isDemoMode } from "@/lib/demoMode";
+import { useIsDemo } from "@/components/LicenseGate";
 import { SAMPLE_JD, SAMPLE_RESUME } from "@/lib/demoSamples";
 
 function MessageCard({ message }: { message: ApplicationMessage }) {
@@ -52,13 +52,14 @@ export default function PitchGeneratorPage() {
   const [elapsed, setElapsed] = useState(0);
 
   // 演示模式：预填示例简历与岗位，访客点一下就能看到四种话术
+  const isDemo = useIsDemo();
   const demoFilled = useRef(false);
   useEffect(() => {
-    if (demoFilled.current || !isDemoMode()) return;
+    if (demoFilled.current || !isDemo) return;
     demoFilled.current = true;
     setResumeText((prev) => prev.trim() || SAMPLE_RESUME);
     setJdText((prev) => prev.trim() || SAMPLE_JD);
-  }, []);
+  }, [isDemo]);
 
   // AI 生成进行中每秒累计等待时间，避免用户干等无反馈
   useEffect(() => {

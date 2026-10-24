@@ -52,3 +52,6 @@ start.log
 cf-worker/node_modules
 cf-worker/out
 cf-worker/*.log
+
+# wrangler 本地缓存
+cf-worker/.wrangler/

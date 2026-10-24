@@ -10,7 +10,7 @@ import { parsePluginJobJson, parseRawJobText, saveImportedJob, type ImportedJob 
 import { normalizeAiError } from "@/lib/aiClient";
 import { analyzeJobMatchWithAi, type JobMatchResult } from "@/lib/jobMatcher";
 import { clearStoredResume, loadStoredResume, saveStoredResume } from "@/lib/resumeStore";
-import { isDemoMode } from "@/lib/demoMode";
+import { useIsDemo } from "@/components/LicenseGate";
 import { SAMPLE_JD, SAMPLE_RESUME } from "@/lib/demoSamples";
 
 function ResultList({ title, items, tone = "indigo" }: { title: string; items: string[]; tone?: "indigo" | "green" | "amber" | "slate" }) {
@@ -52,13 +52,14 @@ export default function JobMatchingPage() {
   const [importMessage, setImportMessage] = useState("可粘贴浏览器插件复制的岗位 JSON。");
 
   // 演示模式：预填示例简历与岗位，访客点一下就能看到完整匹配结果
+  const isDemo = useIsDemo();
   const demoFilled = useRef(false);
   useEffect(() => {
-    if (demoFilled.current || !isDemoMode()) return;
+    if (demoFilled.current || !isDemo) return;
     demoFilled.current = true;
     setResumeText((prev) => prev.trim() || SAMPLE_RESUME);
     setJdText((prev) => prev.trim() || SAMPLE_JD);
-  }, []);
+  }, [isDemo]);
   const [elapsed, setElapsed] = useState(0);
 
   // AI 分析进行中每秒累计等待时间，避免用户干等无反馈

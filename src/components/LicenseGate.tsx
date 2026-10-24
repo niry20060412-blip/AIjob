@@ -34,6 +34,17 @@ export function useLicense(): LicenseContextValue {
   return ctx;
 }
 
+/**
+ * 页面里判断「是否演示模式」请统一用这个 hook，不要直接调 isDemoMode()。
+ *
+ * isDemoMode() 只读地址栏参数：首屏水合时它拿得到值，但站内跳转（客户端路由）
+ * 的那一刻地址栏可能还没补上 ?demo=1，直接调会判成「非演示」，导致示例内容不预填。
+ * 这里跟的是门禁的判定结果，首屏/跳转都一致，且变化时会让页面重新判断一次。
+ */
+export function useIsDemo(): boolean {
+  return useContext(LicenseContext)?.isDemo ?? false;
+}
+
 function reasonToMessage(reason?: string): string {
   switch (reason) {
     case "invalid":

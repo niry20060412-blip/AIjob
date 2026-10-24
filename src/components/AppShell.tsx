@@ -1,21 +1,28 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { navItems } from "@/lib/mockData";
 import { useLicense } from "@/components/LicenseGate";
-import { exitDemoMode } from "@/lib/demoMode";
+import { exitDemoMode, withDemoParam } from "@/lib/demoMode";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const { info, reset, reopenGuide, isDemo } = useLicense();
   // 演示模式下站内跳转也带上 ?demo=1，这样访客复制任意一页的地址给别人，对方打开仍是演示模式
-  const withDemo = (href: string) => {
-    if (!isDemo) return href;
-    const base = href === "/" || href.endsWith("/") ? href : `${href}/`;
-    return `${base}?demo=1`;
-  };
+  const withDemo = (href: string) => withDemoParam(href, isDemo);
+
+  // 地址栏与实际状态保持一致：处于演示模式但地址栏没有 ?demo=1 时自动补上。
+  // 否则访客复制子页面链接发人，对方打开就变成需要激活码的正常站点。
+  useEffect(() => {
+    if (!isDemo || typeof window === "undefined") return;
+    const url = new URL(window.location.href);
+    if (url.searchParams.get("demo") === "1") return;
+    url.searchParams.set("demo", "1");
+    window.history.replaceState({}, "", url.toString());
+  }, [isDemo, pathname]);
 
   return (
     <div className="min-h-screen bg-[#f7f8fc] text-slate-900">

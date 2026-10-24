@@ -6,7 +6,7 @@ import { Badge, Card, PageHeader, ProgressBar } from "@/components/Ui";
 import { generateWeeklyPlanWithAi, type WeeklyPlanResult } from "@/lib/weeklyPlanner";
 import { normalizeAiError } from "@/lib/aiClient";
 import { loadStoredResume } from "@/lib/resumeStore";
-import { isDemoMode } from "@/lib/demoMode";
+import { useIsDemo } from "@/components/LicenseGate";
 import { SAMPLE_PROFILE } from "@/lib/demoSamples";
 
 const targetJobOptions = ["AI 产品经理", "增长产品经理", "B 端产品经理", "产品运营", "用户体验策略"];
@@ -31,12 +31,13 @@ export default function WeeklyPlanPage() {
   const [errorMessage, setErrorMessage] = useState("");
 
   // 演示模式：预填示例候选人画像，访客点一下就能看到七天计划
+  const isDemo = useIsDemo();
   const demoFilled = useRef(false);
   useEffect(() => {
-    if (demoFilled.current || !isDemoMode()) return;
+    if (demoFilled.current || !isDemo) return;
     demoFilled.current = true;
     setProfile((prev) => prev.trim() || SAMPLE_PROFILE);
-  }, []);
+  }, [isDemo]);
 
   useEffect(() => {
     const storedResume = loadStoredResume();
