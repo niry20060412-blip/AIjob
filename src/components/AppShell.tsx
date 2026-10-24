@@ -4,11 +4,18 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { navItems } from "@/lib/mockData";
 import { useLicense } from "@/components/LicenseGate";
+import { exitDemoMode } from "@/lib/demoMode";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const { info, reset, reopenGuide, isDemo } = useLicense();
+  // 演示模式下站内跳转也带上 ?demo=1，这样访客复制任意一页的地址给别人，对方打开仍是演示模式
+  const withDemo = (href: string) => {
+    if (!isDemo) return href;
+    const base = href === "/" || href.endsWith("/") ? href : `${href}/`;
+    return `${base}?demo=1`;
+  };
 
   return (
     <div className="min-h-screen bg-[#f7f8fc] text-slate-900">
@@ -34,7 +41,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             return (
               <Link
                 key={item.href}
-                href={item.href}
+                href={withDemo(item.href)}
                 data-tour={`nav-${item.href}`}
                 className={`flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium transition ${
                   active
@@ -75,7 +82,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <div className="relative mt-2.5">
             <div className="flex gap-2 overflow-x-auto pb-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
               {navItems.map((item) => (
-                <Link key={item.href} href={item.href} className="shrink-0 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs text-slate-600">
+                <Link key={item.href} href={withDemo(item.href)} className="shrink-0 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs text-slate-600">
                   {item.label}
                 </Link>
               ))}
@@ -85,15 +92,26 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </header>
         <main className="mx-auto max-w-7xl px-4 py-5 sm:px-8 sm:py-8 lg:px-10">
           {isDemo ? (
-            <div className="mb-4 rounded-2xl border border-indigo-200 bg-indigo-50 px-4 py-3 text-xs leading-5 text-indigo-700">
-              演示模式：示例简历与岗位已预填，可直接点「开始分析」看效果；结果由本地规则生成，不调用云端模型。
+            <div className="mb-4 flex flex-wrap items-center gap-x-3 gap-y-1 rounded-2xl border border-indigo-200 bg-indigo-50 px-4 py-3 text-xs leading-5 text-indigo-700">
+              <span>
+                演示模式：示例简历与岗位已预填，可直接点「开始分析」看效果；结果由本地规则生成，不调用云端模型。
+              </span>
+              <button
+                onClick={() => {
+                  exitDemoMode();
+                  window.location.href = window.location.pathname;
+                }}
+                className="font-medium text-indigo-600 underline underline-offset-2 hover:text-indigo-800"
+              >
+                退出演示
+              </button>
             </div>
           ) : null}
           {children}
           <footer className="mt-10 border-t border-slate-200 pt-6 text-xs text-slate-400">
             <div className="flex flex-wrap gap-4">
-              <Link href="/privacy" className="hover:text-indigo-600">隐私政策</Link>
-              <Link href="/terms" className="hover:text-indigo-600">用户协议</Link>
+              <Link href={withDemo("/privacy")} className="hover:text-indigo-600">隐私政策</Link>
+              <Link href={withDemo("/terms")} className="hover:text-indigo-600">用户协议</Link>
               <button onClick={() => { if (pathname === "/") reopenGuide(); else router.push("/?tour=1"); }} className="hover:text-indigo-600">新手引导</button>
             </div>
             <p className="mt-3 leading-5">

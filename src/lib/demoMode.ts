@@ -16,15 +16,10 @@ export function isDemoMode(): boolean {
   try {
     const params = new URLSearchParams(window.location.search);
     if (params.get("demo") === "1") {
+      // 记住这次演示状态（站内跳转时 URL 可能不带参数，靠它兜住），
+      // 但**不要**把地址栏里的 ?demo=1 删掉——访客会复制地址栏发给别人，
+      // 参数一删，对方打开就变成需要激活码的正常站点。
       window.sessionStorage.setItem(DEMO_KEY, "1");
-      // 消费掉参数，避免同一会话内来回导航反复触发
-      params.delete("demo");
-      const query = params.toString();
-      window.history.replaceState(
-        {},
-        "",
-        window.location.pathname + (query ? "?" + query : "") + window.location.hash
-      );
       return true;
     }
     return window.sessionStorage.getItem(DEMO_KEY) === "1";
