@@ -86,7 +86,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <main className="mx-auto max-w-7xl px-4 py-5 sm:px-8 sm:py-8 lg:px-10">
           {isDemo ? (
             <div className="mb-4 rounded-2xl border border-indigo-200 bg-indigo-50 px-4 py-3 text-xs leading-5 text-indigo-700">
-              演示模式：分析结果由本地规则生成，不调用云端模型；界面与完整流程可用，结果仅供了解产品使用。
+              演示模式：示例简历与岗位已预填，可直接点「开始分析」看效果；结果由本地规则生成，不调用云端模型。
             </div>
           ) : null}
           {children}

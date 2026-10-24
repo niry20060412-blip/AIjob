@@ -1,11 +1,13 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { AppShell } from "@/components/AppShell";
 import { Badge, Card, PageHeader, ProgressBar } from "@/components/Ui";
 import { generateWeeklyPlanWithAi, type WeeklyPlanResult } from "@/lib/weeklyPlanner";
 import { normalizeAiError } from "@/lib/aiClient";
 import { loadStoredResume } from "@/lib/resumeStore";
+import { isDemoMode } from "@/lib/demoMode";
+import { SAMPLE_PROFILE } from "@/lib/demoSamples";
 
 const targetJobOptions = ["AI 产品经理", "增长产品经理", "B 端产品经理", "产品运营", "用户体验策略"];
 
@@ -27,6 +29,14 @@ export default function WeeklyPlanPage() {
   const [hasSyncedResume, setHasSyncedResume] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
+
+  // 演示模式：预填示例候选人画像，访客点一下就能看到七天计划
+  const demoFilled = useRef(false);
+  useEffect(() => {
+    if (demoFilled.current || !isDemoMode()) return;
+    demoFilled.current = true;
+    setProfile((prev) => prev.trim() || SAMPLE_PROFILE);
+  }, []);
 
   useEffect(() => {
     const storedResume = loadStoredResume();

@@ -7,7 +7,7 @@ export function PageHeader({ eyebrow, title, description, action }: { eyebrow: s
   const { isDemo } = useLicense();
   // 演示模式：隐藏「真实 AI 分析」这个装饰按钮，描述里的「真实 AI」就地换成「本地规则」
   const actionLabel = isDemo ? null : action;
-  const desc = isDemo ? description.replace(/真实\s*AI/g, "本地规则") : description;
+  const desc = isDemo ? description.replace(/真实\s*AI\s*/g, "本地规则") : description;
   return (
     <div className="mb-5 flex flex-col gap-4 rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm sm:mb-8 sm:gap-5 sm:p-7 lg:flex-row lg:items-end lg:justify-between">
       <div>

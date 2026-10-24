@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { AppShell } from "@/components/AppShell";
 import { FileTextUploader } from "@/components/FileTextUploader";
 import { Badge, Card, PageHeader, ProgressBar } from "@/components/Ui";
@@ -8,6 +8,8 @@ import Link from "next/link";
 import { normalizeAiError } from "@/lib/aiClient";
 import { analyzeResumeWithAi, type JobRecommendation, type ResumeAnalysisResult } from "@/lib/resumeAnalyzer";
 import { clearStoredResume, loadStoredResume, saveStoredResume } from "@/lib/resumeStore";
+import { isDemoMode } from "@/lib/demoMode";
+import { SAMPLE_RESUME } from "@/lib/demoSamples";
 
 // 分析结果本地缓存：切走窗口/刷新页面后仍可恢复，避免重复等待
 const analysisCacheKey = "ai-job-assistant-resume-analysis-v1";
@@ -136,6 +138,15 @@ export default function ResumeDiagnosisPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   const characterCount = useMemo(() => resumeText.trim().length, [resumeText]);
+
+  // 演示模式：预填示例简历，访客点开就能直接看效果（正常访问时输入框仍为空）
+  const demoFilled = useRef(false);
+  useEffect(() => {
+    if (demoFilled.current || !isDemoMode()) return;
+    if (resumeText.trim() || loadStoredResume()) return;
+    demoFilled.current = true;
+    setResumeText(SAMPLE_RESUME);
+  }, [resumeText]);
 
   function updateResumeText(text: string, source: "manual" | "upload" = "manual") {
     setResumeText(text);
