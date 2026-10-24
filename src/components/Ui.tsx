@@ -5,10 +5,9 @@ import { useLicense } from "@/components/LicenseGate";
 export function PageHeader({ eyebrow, title, description, action }: { eyebrow: string; title: string; description: string; action?: string }) {
   // 演示模式下把「真实 AI 分析」改成「本地规则分析」，避免与顶部演示提示自相矛盾
   const { isDemo } = useLicense();
-  const actionLabel = isDemo && action ? "本地规则分析" : action;
-  const desc = isDemo
-    ? "演示模式下不调用云端模型，分析结果由本地规则生成，用于展示产品界面与完整流程。"
-    : description;
+  // 演示模式：隐藏「真实 AI 分析」这个装饰按钮，描述里的「真实 AI」就地换成「本地规则」
+  const actionLabel = isDemo ? null : action;
+  const desc = isDemo ? description.replace(/真实\s*AI/g, "本地规则") : description;
   return (
     <div className="mb-5 flex flex-col gap-4 rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm sm:mb-8 sm:gap-5 sm:p-7 lg:flex-row lg:items-end lg:justify-between">
       <div>
