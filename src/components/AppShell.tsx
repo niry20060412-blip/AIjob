@@ -101,7 +101,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           {isDemo ? (
             <div className="mb-4 flex flex-wrap items-center gap-x-3 gap-y-1 rounded-2xl border border-indigo-200 bg-indigo-50 px-4 py-3 text-xs leading-5 text-indigo-700">
               <span>
-                演示模式：示例简历与岗位已预填，可直接点「开始分析」看效果；结果由本地规则生成，不调用云端模型。
+                演示模式：示例简历与岗位已预填，可直接点「开始分析」看效果；示例人物与经历均为虚构，结果由本地规则生成，不调用云端模型。
               </span>
               <button
                 onClick={() => {
