@@ -8,10 +8,16 @@ import { useLicense } from "@/components/LicenseGate";
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
-  const { info, reset, reopenGuide } = useLicense();
+  const { info, reset, reopenGuide, isDemo } = useLicense();
 
   return (
     <div className="min-h-screen bg-[#f7f8fc] text-slate-900">
+      {/* 演示模式标识：明确告知访客当前不是真实 AI 调用，避免误解 */}
+      {isDemo ? (
+        <div className="pointer-events-none fixed right-3 top-3 z-40 rounded-full bg-indigo-600/95 px-3 py-1 text-[11px] font-medium text-white shadow-lg ring-1 ring-white/30 sm:right-5 sm:top-5">
+          演示模式 · 本地规则分析
+        </div>
+      ) : null}
       <aside className="fixed left-0 top-0 hidden h-screen w-68 border-r border-slate-200 bg-white/90 px-5 py-6 backdrop-blur xl:block">
         <div className="mb-8 flex items-center gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-500 to-violet-500 text-lg font-bold text-white shadow-lg shadow-indigo-200">
@@ -47,7 +53,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
         <div className="absolute bottom-6 left-5 right-5">
           <div className="rounded-3xl border border-slate-200 bg-white p-4 text-xs leading-5 text-slate-500">
-            <p>AI 由云端提供，用量按激活码限制。</p>
+            <p>{isDemo ? "演示模式：分析由本地规则生成，不调用云端 AI。" : "AI 由云端提供，用量按激活码限制。"}</p>
             {info ? (
               <p className="mt-1">
                 当前激活码剩余{" "}
@@ -78,6 +84,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </div>
         </header>
         <main className="mx-auto max-w-7xl px-4 py-5 sm:px-8 sm:py-8 lg:px-10">
+          {isDemo ? (
+            <div className="mb-4 rounded-2xl border border-indigo-200 bg-indigo-50 px-4 py-3 text-xs leading-5 text-indigo-700">
+              演示模式：分析结果由本地规则生成，不调用云端模型；界面与完整流程可用，结果仅供了解产品使用。
+            </div>
+          ) : null}
           {children}
           <footer className="mt-10 border-t border-slate-200 pt-6 text-xs text-slate-400">
             <div className="flex flex-wrap gap-4">

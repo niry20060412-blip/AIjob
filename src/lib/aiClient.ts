@@ -1,5 +1,6 @@
 import { cloud, isCloudConfigured } from "@/lib/cloudClient";
 import { consumeLicense } from "@/lib/licenseClient";
+import { isDemoMode } from "@/lib/demoMode";
 
 export type AiSource = "real-ai" | "local-fallback";
 
@@ -77,6 +78,11 @@ export async function callAiJson<T>({
   /** 用量记录用的功能标识：resume / matching / pitch / weekly */
   action?: string;
 }): Promise<T> {
+  // 演示模式：不调用云端模型、不扣额度，直接交给调用方回退本地规则引擎
+  if (isDemoMode()) {
+    throw new AiNotConfiguredError("演示模式：分析结果由本地规则生成。");
+  }
+
   if (!isCloudConfigured || !cloud) {
     throw new AiNotConfiguredError();
   }

@@ -223,7 +223,7 @@ export default function ResumeDiagnosisPage() {
             <div className="flex items-start justify-between gap-4">
               <div>
                 <h2 className="text-xl font-bold text-slate-950">当前候选人画像</h2>
-                <p className="mt-2 text-sm leading-6 text-slate-500">分析来源：{result.source === "real-ai" ? "真实 AI" : "本地兜底"}，请结合实际经历复核后再用于投递。</p>
+                <p className="mt-2 text-sm leading-6 text-slate-500">分析来源：{result.source === "real-ai" ? "真实 AI" : "本地规则分析"}，请结合实际经历复核后再用于投递。</p>
               </div>
               <Badge tone="green">已生成</Badge>
             </div>

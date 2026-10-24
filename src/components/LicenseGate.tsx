@@ -11,6 +11,7 @@ import {
   clearLicense,
 } from "@/lib/licenseClient";
 import { ProductTour, TOUR_STEP_KEY } from "@/components/ProductTour";
+import { isDemoMode } from "@/lib/demoMode";
 
 const ONBOARD_KEY = "ai-job-assistant-onboarded";
 
@@ -18,6 +19,8 @@ interface LicenseContextValue {
   code: string | null;
   info: LicenseInfo | null;
   needsActivation: boolean;
+  /** 演示模式：访问 ?demo=1 时为 true，跳过门禁、AI 走本地规则 */
+  isDemo: boolean;
   activate: (code: string) => Promise<void>;
   reset: () => void;
   reopenGuide: () => void;
@@ -52,6 +55,8 @@ export function LicenseGate({ children }: { children: ReactNode }) {
   const [code, setCode] = useState<string | null>(null);
   const [info, setInfo] = useState<LicenseInfo | null>(null);
   const [needsActivation, setNeedsActivation] = useState(true);
+  /** 演示模式：?demo=1 进入，跳过门禁 */
+  const [isDemo, setIsDemo] = useState(false);
   // mounted：客户端水合完成前，门禁一律不渲染，避免「已激活用户每次加载都先闪一下激活页」
   const [mounted, setMounted] = useState(false);
   const [input, setInput] = useState("");
@@ -65,13 +70,13 @@ export function LicenseGate({ children }: { children: ReactNode }) {
 
   // 激活门禁期间锁住页面滚动，避免半透明遮罩后方内容被滑出来"透看"
   useEffect(() => {
-    if (mounted && needsActivation && !isAdmin) {
+    if (mounted && needsActivation && !isAdmin && !isDemo) {
       document.body.style.overflow = "hidden";
       return () => {
         document.body.style.overflow = "";
       };
     }
-  }, [mounted, needsActivation, isAdmin]);
+  }, [mounted, needsActivation, isAdmin, isDemo]);
 
   function closeGuide() {
     if (typeof window !== "undefined") window.localStorage.setItem(ONBOARD_KEY, "1");
@@ -92,9 +97,12 @@ export function LicenseGate({ children }: { children: ReactNode }) {
   useEffect(() => {
     const savedCode = getActiveCode();
     const savedInfo = getLicenseInfo();
+    const demo = isDemoMode();
+    setIsDemo(demo);
     setCode(savedCode);
     setInfo(savedInfo);
-    setNeedsActivation(!(savedCode && savedInfo));
+    // 演示模式直接放行，不需要激活码
+    setNeedsActivation(demo ? false : !(savedCode && savedInfo));
     setMounted(true);
   }, []);
 
@@ -181,10 +189,10 @@ export function LicenseGate({ children }: { children: ReactNode }) {
   }
 
   return (
-    <LicenseContext.Provider value={{ code, info, needsActivation, activate, reset, reopenGuide }}>
+    <LicenseContext.Provider value={{ code, info, needsActivation, isDemo, activate, reset, reopenGuide }}>
       {children}
       {showTour && !isAdmin ? <ProductTour key={tourNonce} open={showTour} onClose={closeGuide} /> : null}
-      {mounted && needsActivation && !isAdmin ? (
+      {mounted && needsActivation && !isAdmin && !isDemo ? (
         <div className="fixed inset-0 z-[60] flex items-center justify-center overflow-y-auto bg-[#f7f8fc] px-4 py-8">
           <div className="my-auto w-[min(92vw,420px)] rounded-3xl bg-white p-7 shadow-2xl">
             <h2 className="text-lg font-semibold text-slate-950">激活你的求职助手</h2>
