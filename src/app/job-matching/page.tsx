@@ -9,7 +9,7 @@ import { saveJobFlowContext } from "@/lib/flowContext";
 import { parsePluginJobJson, parseRawJobText, saveImportedJob, type ImportedJob } from "@/lib/importedJobs";
 import { normalizeAiError } from "@/lib/aiClient";
 import { analyzeJobMatchWithAi, type JobMatchResult } from "@/lib/jobMatcher";
-import { clearStoredResume, loadStoredResume, saveStoredResume } from "@/lib/resumeStore";
+import { clearStoredResume, loadStoredResume, saveStoredResume, type StoredResumeFile } from "@/lib/resumeStore";
 import { useIsDemo } from "@/components/LicenseGate";
 import { SAMPLE_JD, SAMPLE_RESUME } from "@/lib/demoSamples";
 
@@ -50,6 +50,8 @@ export default function JobMatchingPage() {
   const [importJson, setImportJson] = useState("");
   const [importedJob, setImportedJob] = useState<ImportedJob | null>(null);
   const [importMessage, setImportMessage] = useState("可粘贴浏览器插件复制的岗位 JSON。");
+  // 上次上传的简历文件记录（本地存储），切页回来时让上传卡片保持「已完成」
+  const [uploadedResumeFile, setUploadedResumeFile] = useState<StoredResumeFile | null>(() => loadStoredResume()?.file ?? null);
 
   // 演示模式：预填示例简历与岗位，访客点一下就能看到完整匹配结果
   const isDemo = useIsDemo();
@@ -72,12 +74,21 @@ export default function JobMatchingPage() {
   const resumeCount = useMemo(() => resumeText.trim().length, [resumeText]);
   const jdCount = useMemo(() => jdText.trim().length, [jdText]);
 
-  function updateResumeText(text: string, source: "manual" | "upload" = "manual") {
+  function updateResumeText(
+    text: string,
+    source: "manual" | "upload" = "manual",
+    file?: { fileName: string; fileType: string; charCount: number },
+  ) {
     setResumeText(text);
     setResult(null);
+    const fileRecord: StoredResumeFile | undefined = file
+      ? { name: file.fileName, type: file.fileType, charCount: file.charCount, updatedAt: new Date().toISOString() }
+      : undefined;
+    if (fileRecord) setUploadedResumeFile(fileRecord);
     if (text.trim()) {
-      saveStoredResume(text, source);
+      saveStoredResume(text, source, fileRecord);
     } else {
+      setUploadedResumeFile(null);
       clearStoredResume();
     }
   }
@@ -198,7 +209,12 @@ export default function JobMatchingPage() {
           <FileTextUploader
             label="上传简历附件"
             helperText="上传简历后会自动提取文本并填入下方文本框。"
-            onTextExtracted={(text) => updateResumeText(text, "upload")}
+            onTextExtracted={(text, meta) => updateResumeText(text, "upload", meta)}
+            initialFile={
+              uploadedResumeFile
+                ? { fileName: uploadedResumeFile.name, fileType: uploadedResumeFile.type, charCount: uploadedResumeFile.charCount }
+                : null
+            }
           />
           <Card>
           <div className="flex items-start justify-between gap-4">

@@ -6,11 +6,34 @@ import { Badge } from "@/components/Ui";
 
 type UploadStatus = "idle" | "reading" | "success" | "warning" | "error";
 
-export function FileTextUploader({ label, helperText, onTextExtracted }: { label: string; helperText: string; onTextExtracted: (text: string) => void }) {
+export type UploadedFileMeta = { fileName: string; fileType: string; charCount: number };
+
+/** 上次上传的文件记录（来自本地存储）：切走再回来时用它把卡片恢复成「已完成」 */
+export type RestorableFileMeta = UploadedFileMeta & { warning?: string };
+
+export function FileTextUploader({
+  label,
+  helperText,
+  onTextExtracted,
+  initialFile,
+}: {
+  label: string;
+  helperText: string;
+  onTextExtracted: (text: string, meta?: UploadedFileMeta) => void;
+  initialFile?: RestorableFileMeta | null;
+}) {
   const inputRef = useRef<HTMLInputElement | null>(null);
-  const [status, setStatus] = useState<UploadStatus>("idle");
-  const [fileInfo, setFileInfo] = useState<ExtractedFileText | null>(null);
-  const [message, setMessage] = useState("等待上传 TXT / MD / PDF / DOCX");
+  const [status, setStatus] = useState<UploadStatus>(initialFile ? "success" : "idle");
+  const [fileInfo, setFileInfo] = useState<ExtractedFileText | null>(
+    initialFile
+      ? { fileName: initialFile.fileName, fileType: initialFile.fileType, text: "" }
+      : null,
+  );
+  const [message, setMessage] = useState(
+    initialFile
+      ? `上次已识别「${initialFile.fileName}」，提取 ${initialFile.charCount} 个字符，内容已保存在本机。`
+      : "等待上传 TXT / MD / PDF / DOCX",
+  );
   const [isDragging, setIsDragging] = useState(false);
 
   async function handleFile(file: File | undefined) {
@@ -25,7 +48,11 @@ export function FileTextUploader({ label, helperText, onTextExtracted }: { label
       setFileInfo(result);
 
       if (result.text) {
-        onTextExtracted(result.text);
+        onTextExtracted(result.text, {
+          fileName: result.fileName,
+          fileType: result.fileType,
+          charCount: result.text.length,
+        });
       }
 
       if (result.warning) {

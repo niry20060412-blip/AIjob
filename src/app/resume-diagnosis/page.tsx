@@ -7,7 +7,7 @@ import { Badge, Card, PageHeader, ProgressBar } from "@/components/Ui";
 import Link from "next/link";
 import { normalizeAiError } from "@/lib/aiClient";
 import { analyzeResumeWithAi, type JobRecommendation, type ResumeAnalysisResult } from "@/lib/resumeAnalyzer";
-import { clearStoredResume, loadStoredResume, saveStoredResume } from "@/lib/resumeStore";
+import { clearStoredResume, loadStoredResume, saveStoredResume, type StoredResumeFile } from "@/lib/resumeStore";
 import { useIsDemo } from "@/components/LicenseGate";
 import { SAMPLE_RESUME } from "@/lib/demoSamples";
 
@@ -115,6 +115,8 @@ export default function ResumeDiagnosisPage() {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [elapsed, setElapsed] = useState(0);
+  // 上次上传的文件记录：切到别的页面再回来，上传卡片仍显示「哪个文件、提取多少字」
+  const [uploadedFile, setUploadedFile] = useState<StoredResumeFile | null>(() => loadStoredResume()?.file ?? null);
 
   // 分析进行中每秒累计已等待时间，用于进度提示
   useEffect(() => {
@@ -149,13 +151,22 @@ export default function ResumeDiagnosisPage() {
     setResumeText(SAMPLE_RESUME);
   }, [isDemo, resumeText]);
 
-  function updateResumeText(text: string, source: "manual" | "upload" = "manual") {
+  function updateResumeText(
+    text: string,
+    source: "manual" | "upload" = "manual",
+    file?: { fileName: string; fileType: string; charCount: number },
+  ) {
     setResumeText(text);
     setResult(null);
     setErrorMessage("");
+    const fileRecord: StoredResumeFile | undefined = file
+      ? { name: file.fileName, type: file.fileType, charCount: file.charCount, updatedAt: new Date().toISOString() }
+      : undefined;
+    if (fileRecord) setUploadedFile(fileRecord);
     if (text.trim()) {
-      saveStoredResume(text, source);
+      saveStoredResume(text, source, fileRecord);
     } else {
+      setUploadedFile(null);
       clearStoredResume();
     }
     clearCachedAnalysis();
@@ -191,7 +202,12 @@ export default function ResumeDiagnosisPage() {
             <FileTextUploader
               label="上传简历附件"
               helperText="上传后会自动提取文本并填入下方文本框，你可以先删除隐私信息再分析。"
-              onTextExtracted={(text) => updateResumeText(text, "upload")}
+              onTextExtracted={(text, meta) => updateResumeText(text, "upload", meta)}
+              initialFile={
+                uploadedFile
+                  ? { fileName: uploadedFile.name, fileType: uploadedFile.type, charCount: uploadedFile.charCount }
+                  : null
+              }
             />
           </div>
           <Card>
