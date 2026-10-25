@@ -10,6 +10,7 @@ import {
   isAdminCloudConfigured,
   type UsageLog,
 } from "@/lib/adminClient";
+import { useDocumentTitle } from "@/lib/useDocumentTitle";
 
 // 后台口令只在本标签页内暂存，关掉标签页即失效；真 token 只在服务端
 const PASS_STORE_KEY = "aja_admin_pass";
@@ -94,6 +95,9 @@ export default function AdminPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   /* eslint-enable react-hooks/set-state-in-effect */
+
+  // 标签页名字标成「后台管理」，避免和正常站点、演示站的标签混在一起
+  useDocumentTitle("AI 精准求职投递助手 后台管理");
 
   function signOut() {
     try {

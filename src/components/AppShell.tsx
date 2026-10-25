@@ -6,6 +6,10 @@ import { usePathname, useRouter } from "next/navigation";
 import { navItems } from "@/lib/mockData";
 import { useLicense } from "@/components/LicenseGate";
 import { exitDemoMode, withDemoParam } from "@/lib/demoMode";
+import { useDocumentTitle } from "@/lib/useDocumentTitle";
+
+/** 站点名：正常站点用它，演示模式在后面加「效果演示」，方便和正常站点区分开 */
+export const SITE_NAME = "AI 精准求职投递助手";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -13,6 +17,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const { info, reset, reopenGuide, isDemo } = useLicense();
   // 演示模式下站内跳转也带上 ?demo=1，这样访客复制任意一页的地址给别人，对方打开仍是演示模式
   const withDemo = (href: string) => withDemoParam(href, isDemo);
+
+  // 演示模式：标签页标题标成「效果演示」，方便和正常站点区分；正常访问不干预（用 metadata 的标题）
+  useDocumentTitle(isDemo ? `${SITE_NAME} 效果演示` : null);
 
   // 地址栏与实际状态保持一致：处于演示模式但地址栏没有 ?demo=1 时自动补上。
   // 否则访客复制子页面链接发人，对方打开就变成需要激活码的正常站点。
