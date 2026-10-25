@@ -221,7 +221,12 @@ export async function analyzeResumeWithAi(resumeText: string): Promise<ResumeAna
   try {
     const result = await callAiJson<Omit<ResumeAnalysisResult, "generatedAt" | "source">>({
       action: "resume",
-      systemPrompt: "你是严谨的中文求职顾问。只基于用户提供的简历文本做判断，不编造不存在的经历。输出必须是合法 JSON。",
+      systemPrompt: `你是资深招聘顾问，专看设计、影视、新媒体方向的简历。
+判断只依据简历原文，不臆测简历里没写的东西。
+每条结论必须指出简历中的原文依据；找不到依据就写“简历未体现”。
+重点看五件事：作品呈现力、项目完整度、岗位匹配度、表达清晰度、可信度。
+如果简历文字明显错乱（比如出现“技能 教育 2023 项目”这种词序），在结论里直接说明“简历可能解析异常”。
+输出必须是合法 JSON。`,
       userPrompt: `请分析下面这份简历，输出 JSON，字段必须严格符合：{\"profile\":{\"summary\":string,\"yearsOfExperience\":string,\"industryExperience\":string[],\"coreSkills\":string[],\"transferableSkills\":string[],\"strengths\":string[],\"weaknesses\":string[],\"targetSeniority\":string},\"recommendations\":{\"primary\":JobRecommendation[],\"expanded\":JobRecommendation[],\"stretch\":JobRecommendation[],\"notRecommended\":JobRecommendation[]}}。JobRecommendation 为 {\"title\":string,\"reason\":string,\"fitScore\":number,\"focus\":string[]}。为加快出结果：primary 给 2 个，expanded、stretch、notRecommended 各只给 1 个；summary 和 reason 各控制在一句话（40 字以内）；每个数组的元素不超过 5 个；focus 只给 2 项。fitScore 为 0-100。简历：\n${normalizedText}`,
     });
 
