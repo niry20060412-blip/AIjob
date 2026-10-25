@@ -15,16 +15,57 @@ export type StoredResume = {
   file?: StoredResumeFile;
 };
 
-function canUseBrowserStorage() {
-  return typeof window !== "undefined" && typeof window.localStorage !== "undefined";
+/**
+ * 简历存在哪：localStorage → sessionStorage → 内存，逐级兜底。
+ *
+ * 为什么不只靠 localStorage：关掉 cookie / 无痕模式 / 某些内置浏览器里，
+ * 读写 localStorage 会直接抛异常（Safari 无痕、部分 App 内嵌 WebView 都这样）。
+ * 以前没有 try/catch，写失败后简历就只在当前页面内存里，一切页面就空——
+ * 表现就是「换了页面简历没了」。现在写失败会退到 sessionStorage，
+ * 再失败还有模块级内存兜底（同一次打开期间切页面不会丢）。
+ */
+let memoryResume: StoredResume | null = null;
+
+function safeGet(storage: "local" | "session"): string | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const area = storage === "local" ? window.localStorage : window.sessionStorage;
+    return area.getItem(resumeStorageKey);
+  } catch {
+    return null;
+  }
 }
 
-export function loadStoredResume(): StoredResume | null {
-  if (!canUseBrowserStorage()) return null;
+function safeSet(value: string) {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(resumeStorageKey, value);
+  } catch {
+    /* 无痕模式 / 存储满 / 被禁用，交给下一级 */
+  }
+  try {
+    window.sessionStorage.setItem(resumeStorageKey, value);
+  } catch {
+    /* 同样可能被禁用 */
+  }
+}
 
-  const raw = window.localStorage.getItem(resumeStorageKey);
+function safeRemove() {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.removeItem(resumeStorageKey);
+  } catch {
+    /* ignore */
+  }
+  try {
+    window.sessionStorage.removeItem(resumeStorageKey);
+  } catch {
+    /* ignore */
+  }
+}
+
+function parseStoredResume(raw: string | null): StoredResume | null {
   if (!raw) return null;
-
   try {
     const parsed = JSON.parse(raw) as Partial<StoredResume>;
     if (typeof parsed.text !== "string" || !parsed.text.trim()) return null;
@@ -48,13 +89,15 @@ export function loadStoredResume(): StoredResume | null {
   }
 }
 
+export function loadStoredResume(): StoredResume | null {
+  return parseStoredResume(safeGet("local")) ?? parseStoredResume(safeGet("session")) ?? memoryResume;
+}
+
 export function saveStoredResume(
   text: string,
   source: StoredResume["source"] = "manual",
   file?: StoredResumeFile,
 ) {
-  if (!canUseBrowserStorage()) return;
-
   const normalizedText = text.trim();
   if (!normalizedText) {
     clearStoredResume();
@@ -72,10 +115,11 @@ export function saveStoredResume(
     ...(file ? { file } : previousFile ? { file: previousFile } : {}),
   };
 
-  window.localStorage.setItem(resumeStorageKey, JSON.stringify(payload));
+  memoryResume = payload;
+  safeSet(JSON.stringify(payload));
 }
 
 export function clearStoredResume() {
-  if (!canUseBrowserStorage()) return;
-  window.localStorage.removeItem(resumeStorageKey);
+  memoryResume = null;
+  safeRemove();
 }

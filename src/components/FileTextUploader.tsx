@@ -31,7 +31,7 @@ export function FileTextUploader({
   );
   const [message, setMessage] = useState(
     initialFile
-      ? `上次已识别「${initialFile.fileName}」，提取 ${initialFile.charCount} 个字符，内容已保存在本机。`
+      ? `上次已识别「${initialFile.fileName}」，提取 ${initialFile.charCount} 个字符，下方文本框已恢复。`
       : "等待上传 TXT / MD / PDF / DOCX",
   );
   const [isDragging, setIsDragging] = useState(false);

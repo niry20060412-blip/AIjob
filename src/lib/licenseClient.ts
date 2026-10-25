@@ -51,12 +51,22 @@ function reasonToMessage(reason: string): string {
 
 export function getActiveCode(): string | null {
   if (typeof window === "undefined") return null;
-  return window.localStorage.getItem(LICENSE_CODE_KEY);
+  try {
+    return window.localStorage.getItem(LICENSE_CODE_KEY);
+  } catch {
+    // 无痕模式 / 存储被禁用：当作未激活处理，不要让整页崩掉
+    return null;
+  }
 }
 
 export function getLicenseInfo(): LicenseInfo | null {
   if (typeof window === "undefined") return null;
-  const raw = window.localStorage.getItem(LICENSE_INFO_KEY);
+  let raw: string | null = null;
+  try {
+    raw = window.localStorage.getItem(LICENSE_INFO_KEY);
+  } catch {
+    return null;
+  }
   if (!raw) return null;
   try {
     return JSON.parse(raw) as LicenseInfo;
@@ -67,8 +77,12 @@ export function getLicenseInfo(): LicenseInfo | null {
 
 export function saveLicense(code: string, info: LicenseInfo) {
   if (typeof window === "undefined") return;
-  window.localStorage.setItem(LICENSE_CODE_KEY, code);
-  window.localStorage.setItem(LICENSE_INFO_KEY, JSON.stringify(info));
+  try {
+    window.localStorage.setItem(LICENSE_CODE_KEY, code);
+    window.localStorage.setItem(LICENSE_INFO_KEY, JSON.stringify(info));
+  } catch {
+    // 写不进去就算了，授权状态本次会话内仍由内存里的 state 维持
+  }
 }
 
 export function clearLicense() {

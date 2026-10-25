@@ -14,31 +14,65 @@ import { SAMPLE_RESUME } from "@/lib/demoSamples";
 // 分析结果本地缓存：切走窗口/刷新页面后仍可恢复，避免重复等待
 const analysisCacheKey = "ai-job-assistant-resume-analysis-v1";
 
-function loadCachedAnalysis(): { resumeText: string; result: ResumeAnalysisResult } | null {
-  if (typeof window === "undefined" || typeof window.localStorage === "undefined") return null;
+// 无痕模式 / 内置浏览器里 localStorage 可能直接抛异常，这时用内存兜一层：
+// 同一次打开期间切页面，分析结果也不会白白消失
+type CachedAnalysis = { resumeText: string; result: ResumeAnalysisResult };
+let memoryAnalysis: CachedAnalysis | null = null;
+
+function readAnalysisRaw(key: "local" | "session"): string | null {
+  if (typeof window === "undefined") return null;
   try {
-    const raw = window.localStorage.getItem(analysisCacheKey);
-    if (!raw) return null;
-    const parsed = JSON.parse(raw) as { resumeText: string; result: ResumeAnalysisResult };
-    if (!parsed?.result || typeof parsed.resumeText !== "string") return null;
-    return parsed;
+    const area = key === "local" ? window.localStorage : window.sessionStorage;
+    return area.getItem(analysisCacheKey);
   } catch {
     return null;
   }
 }
 
+function loadCachedAnalysis(): CachedAnalysis | null {
+  for (const area of ["local", "session"] as const) {
+    const raw = readAnalysisRaw(area);
+    if (!raw) continue;
+    try {
+      const parsed = JSON.parse(raw) as CachedAnalysis;
+      if (parsed?.result && typeof parsed.resumeText === "string") return parsed;
+    } catch {
+      // 换下一级
+    }
+  }
+  return memoryAnalysis;
+}
+
 function saveCachedAnalysis(resumeText: string, result: ResumeAnalysisResult) {
-  if (typeof window === "undefined" || typeof window.localStorage === "undefined") return;
+  const payload: CachedAnalysis = { resumeText, result };
+  memoryAnalysis = payload;
+  if (typeof window === "undefined") return;
+  const raw = JSON.stringify(payload);
   try {
-    window.localStorage.setItem(analysisCacheKey, JSON.stringify({ resumeText, result }));
+    window.localStorage.setItem(analysisCacheKey, raw);
   } catch {
-    // 存储满等异常不影响主流程
+    // 存储满 / 被禁用：交给 sessionStorage 和内存
+  }
+  try {
+    window.sessionStorage.setItem(analysisCacheKey, raw);
+  } catch {
+    // 同样可能被禁用
   }
 }
 
 function clearCachedAnalysis() {
-  if (typeof window === "undefined" || typeof window.localStorage === "undefined") return;
-  window.localStorage.removeItem(analysisCacheKey);
+  memoryAnalysis = null;
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.removeItem(analysisCacheKey);
+  } catch {
+    // ignore
+  }
+  try {
+    window.sessionStorage.removeItem(analysisCacheKey);
+  } catch {
+    // ignore
+  }
 }
 
 const recommendationLabels = {
