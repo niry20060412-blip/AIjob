@@ -102,7 +102,20 @@ export default {
     }
 
     // 其余路径走静态资源
-    const resp = await env.ASSETS.fetch(request);
+    //
+    // 修正 Next 16 静态导出的预取文件路径不一致：
+    //   路由请求的是 /seg/__next.seg.__PAGE__.txt
+    //   构建产物实际是 /seg/__next.seg/__PAGE__.txt
+    // 不纠正的话每个页面都会在控制台报一条 404，且链接预取全部失效（退化成整页刷新）。
+    let assetRequest = request;
+    const prefetchMatch = url.pathname.match(/^(.*)\.__PAGE__\.txt$/);
+    if (prefetchMatch) {
+      const fixed = new URL(request.url);
+      fixed.pathname = `${prefetchMatch[1]}/__PAGE__.txt`;
+      assetRequest = new Request(fixed.toString(), request);
+    }
+
+    const resp = await env.ASSETS.fetch(assetRequest);
 
     // HTML 一律要求边缘回源校验（no-cache），不带强缓存。
     // 原因：页面里引用的 JS/CSS 都带内容哈希，一旦边缘继续返回旧 HTML，
